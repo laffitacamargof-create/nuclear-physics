@@ -1,0 +1,155 @@
+{
+  "schema_version": "qcol-mapping-realization-baseline/1.0",
+  "baseline_id": "phase-a3.2a.wp0.mapping-realization-baseline.v1",
+  "project_version": "1.8.3",
+  "frozen_on": "2026-08-07",
+  "scientific_behavior_change": false,
+  "purpose": "Freeze the accepted, experimental, unresolved, and known-invalid mapping-realization states before policy-foundation refactoring.",
+  "status_dimensions": {
+    "mapper_conformance": [
+      "verified",
+      "verified_for_transform",
+      "unresolved",
+      "failed",
+      "not_applicable"
+    ],
+    "composition_conformance": [
+      "verified",
+      "experimental",
+      "failed",
+      "unresolved",
+      "not_applicable"
+    ],
+    "cell_acceptance": [
+      "acceptance_verified",
+      "acceptance_verified_for_analysis",
+      "experimental",
+      "not_verified",
+      "recognized_not_executable"
+    ]
+  },
+  "variants": [
+    {
+      "variant_id": "baseline.pair.one_pair.ground_state.v1",
+      "model_id": "nuclear.reduced_pairing.one_pair",
+      "task_id": "ground_state_energy",
+      "mapping_id": "pair_mapping",
+      "planned_policy_id": "pair_mapping.seniority_zero.v1",
+      "mapping_scope": "restricted_seniority_zero_subspace",
+      "mapper_conformance": "verified",
+      "composition_conformance": "verified",
+      "cell_acceptance": "acceptance_verified",
+      "current_matrix_status": "acceptance_verified",
+      "current_runtime_runnable": true,
+      "regression_anchor": true,
+      "acceptance_suite_id": "acceptance.cell.one_pair.ground_state.v1",
+      "notes": [
+        "Positive regression anchor.",
+        "Pair occupation and quasispin semantics apply only in the declared seniority-zero domain."
+      ]
+    },
+    {
+      "variant_id": "baseline.pair.multi_pair.ground_state.v1",
+      "model_id": "nuclear.reduced_pairing.multi_pair",
+      "task_id": "ground_state_energy",
+      "mapping_id": "pair_mapping",
+      "planned_policy_id": "pair_mapping.seniority_zero.v1",
+      "mapping_scope": "restricted_seniority_zero_subspace",
+      "mapper_conformance": "verified",
+      "composition_conformance": "experimental",
+      "cell_acceptance": "experimental",
+      "current_matrix_status": "experimental",
+      "current_runtime_runnable": true,
+      "regression_anchor": false,
+      "acceptance_suite_id": "acceptance.cell.multi_pair.ground_state.v1",
+      "notes": [
+        "Bathri-derived independent plugin.",
+        "No promotion is granted by WP0."
+      ]
+    },
+    {
+      "variant_id": "baseline.jw.mapping_analysis.v1",
+      "model_id": "fermion.general_spin_orbital",
+      "task_id": "mapping_analysis",
+      "mapping_id": "jordan_wigner.v1",
+      "mapping_scope": "full_fermionic_fock_space",
+      "mapper_conformance": "verified",
+      "composition_conformance": "not_applicable",
+      "cell_acceptance": "acceptance_verified_for_analysis",
+      "current_matrix_status": "acceptance_verified",
+      "current_runtime_runnable": true,
+      "regression_anchor": true,
+      "acceptance_suite_id": "acceptance.cell.general_spin_orbital.mapping_analysis.v1",
+      "notes": [
+        "Verified for transformation, basis semantics, fixed-sector spectral equivalence, and operator-resource analysis.",
+        "No state preparation, ansatz, circuit, shots, or VQE claim is part of this task."
+      ]
+    },
+    {
+      "variant_id": "baseline.bk.mapping_analysis.v1",
+      "model_id": "fermion.general_spin_orbital",
+      "task_id": "mapping_analysis",
+      "mapping_id": "bravyi_kitaev.v1",
+      "mapping_scope": "full_fermionic_fock_space",
+      "mapper_conformance": "verified",
+      "composition_conformance": "not_applicable",
+      "cell_acceptance": "acceptance_verified_for_analysis",
+      "current_matrix_status": "acceptance_verified",
+      "current_runtime_runnable": true,
+      "regression_anchor": true,
+      "acceptance_suite_id": "acceptance.cell.general_spin_orbital.mapping_analysis.v1",
+      "notes": [
+        "Verified for transformation, distributed occupation-code semantics, fixed-sector spectral equivalence, and operator-resource analysis.",
+        "Raw qubit popcount is explicitly not treated as particle number."
+      ]
+    },
+    {
+      "variant_id": "baseline.jw.general_ground_state.current_composition.v1",
+      "model_id": "fermion.general_spin_orbital",
+      "task_id": "ground_state_energy",
+      "mapping_id": "jordan_wigner.v1",
+      "mapping_scope": "full_fermionic_fock_space",
+      "mapper_conformance": "verified",
+      "composition_conformance": "failed",
+      "cell_acceptance": "not_verified",
+      "current_matrix_status": "experimental",
+      "current_runtime_runnable": true,
+      "regression_anchor": true,
+      "acceptance_suite_id": "acceptance.cell.general_spin_orbital.jw_ground_state.v1",
+      "failure_code": "ANSATZ_GENERATOR_MAPPING_MISMATCH",
+      "failure_message": "The circuit preserves particle number, but it does not implement the JW-mapped nonadjacent fermionic generator.",
+      "notes": [
+        "The Jordan-Wigner mapper remains verified.",
+        "The current bare all-to-all qubit exchange ansatz is retained only as a known-invalid negative fixture until Phase A.3.2c replaces it.",
+        "WP0 does not change runtime behavior or promote this cell."
+      ]
+    },
+    {
+      "variant_id": "baseline.bk.general_ground_state.v1",
+      "model_id": "fermion.general_spin_orbital",
+      "task_id": "ground_state_energy",
+      "mapping_id": "bravyi_kitaev.v1",
+      "mapping_scope": "full_fermionic_fock_space",
+      "mapper_conformance": "verified_for_transform",
+      "composition_conformance": "unresolved",
+      "cell_acceptance": "recognized_not_executable",
+      "current_matrix_status": "experimental_cell_with_jw_variant",
+      "current_runtime_runnable": false,
+      "regression_anchor": true,
+      "acceptance_suite_id": null,
+      "notes": [
+        "BK remains accepted for mapping analysis only.",
+        "BK-aware state preparation, sector diagnostics, ansatz semantics, and cell acceptance are unresolved."
+      ]
+    }
+  ],
+  "frozen_invariants": [
+    "No accepted scientific behavior is changed in WP0.",
+    "The one-pair pair-mapping route remains acceptance-verified.",
+    "The multi-pair pair-mapping route remains experimental.",
+    "JW and BK mapping-analysis routes remain acceptance-verified for analysis only.",
+    "The current JW general ground-state composition is rejected while the JW mapper remains verified.",
+    "The BK general ground-state variant remains recognized but not executable.",
+    "No scientific status is promoted by this baseline freeze."
+  ]
+}

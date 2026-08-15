@@ -1,0 +1,29 @@
+# QCOL Post-Freeze E1 — exact Franci/QCOL Hugging Face compatibility profile
+# Candidate profile only. The accepted RC4 local/Colab profiles remain unchanged.
+
+numpy==1.26.4
+scipy==1.13.1
+cirq-core==1.4.1
+openfermion==1.6.1
+pyqasm==1.0.4
+qiskit==1.2.4
+qiskit-aer==0.14.2
+sympy==1.13.3
+matplotlib==3.8.4
+pandas==2.2.2
+networkx==3.3
+h5py==3.11.0
+requests==2.32.4
+openqasm3==1.0.1
+ply==3.11
+gradio==3.50.2
+fastapi==0.104.1
+uvicorn==0.24.0
+httpx==0.25.2
+huggingface-hub==0.19.4
+altair==5.2.0
+pillow==10.4.0
+websockets==11.0.3
+pydantic==2.5.3
+starlette==0.27.0
+anyio==3.7.1

@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1" name="viewport"/>
+<title>QCOL — Scientific Modelling Journey</title>
+<link href="/assets/styles.css?v=a32c-wp12-ui-r6&ext=post-phase-c-qho-schema-r1" rel="stylesheet"/>
+</head>
+<body>
+<header class="topbar">
+<div class="brand-block"><div class="brand-mark">Q</div><div><h1>QCOL — Scientific Modelling Journey</h1><p>Nuclear physics ⇄ quantum computation · no-code by default, inspectable by choice</p></div></div>
+<div class="top-actions"><span class="health-badge waiting" id="apiHealth">API checking</span><span class="phase-badge">PHASE C · TRY / COMPARE · POST-C QHO SCHEMA UI · R9</span><a class="button secondary" href="https://laffitacamargof-create.github.io/quantum-computing-open-lab/quantum-app-studio/" target="_blank" rel="noopener">Quantum App Studio</a><button class="button secondary" id="newRunButton" type="button">New run</button></div>
+</header>
+<main class="page-shell">
+<section class="notice-strip route-banner"><div><strong>Execution boundary:</strong> the selected IBM / Google / AWS provider is a target label. The current release executes circuit tasks on the local Cirq simulator; provider adapters and QPU submission belong to Phase 5. Mapping analysis is deterministic and uses no backend. The bounded general spin-orbital ground-state route executes Jordan–Wigner on the local simulator; Bravyi–Kitaev remains analysis-only. The oscillator entrance is generated from four independent QHO ModelContracts; all four cells remain experimental pending model-specific promotion.</div></section>
+<div class="primary-grid">
+<aside class="panel model-panel">
+<div class="panel-heading"><div class="step-number purple">1</div><div><h2>Physics modelling entrance</h2><p>Declare the physical system first. QCOL builds the supported quantum workflow internally.</p></div></div>
+<div aria-label="Physical model family" class="model-cards" id="modelCards"></div>
+<div class="support-note" id="modelSupportNote"></div>
+<details class="details-box scientific-core-box" open><summary>Scientific core — read-only contract projection</summary><div id="scientificCoreInspector"><div class="empty-state">Choose a model to inspect its scientific core.</div></div></details>
+<form id="runForm" novalidate="">
+<div class="model-fields" id="fermionFields"><div class="model-fields hidden" id="spinFields"></div></div>
+<div class="model-fields hidden" id="oscillatorFields"></div>
+<div class="model-fields hidden" id="customFields"></div>
+<details class="details-box" open=""><summary>Run controls</summary><div class="form-grid two-columns">
+<label style="grid-column:1/-1"><span>Scientific task</span><select id="taskId"></select><small id="taskSupportNote">Choose a runnable model × task cell.</small></label>
+<label><span>Run mode</span><select id="runMode"><option value="vqe">External VQE loop (COBYLA)</option><option value="single_evaluation">Single validated θ evaluation</option></select></label>
+<label><span>Provider target</span><select id="targetBackend"><option value="ibm">IBM</option><option value="google">Google</option><option value="aws">AWS</option></select></label>
+<label><span>Shots per measurement group</span><input id="shots" min="64" step="64" type="number" value="1024"/></label>
+<label><span>Maximum energy evaluations</span><input id="maxEvaluations" max="500" min="1" type="number" value="24"/></label>
+<label><span>Energy tolerance</span><input id="energyTolerance" min="0" step="0.0001" type="number" value="0.002"/></label>
+<label><span>Acceptance absolute floor</span><input id="acceptanceFloor" min="0" step="0.001" type="number" value="0.05"/></label>
+<label><span>Seed</span><input id="seed" step="1" type="number" value="42"/></label>
+<label><span>Initial θ (optional, comma-separated)</span><input id="initialParameters" placeholder="leave blank for the declared strategy" type="text"/></label>
+</div></details>
+<div class="form-error hidden" id="formError" role="alert"></div>
+<div class="button-row"><button class="button primary" id="buildRunButton" type="submit">Build &amp; Run</button><button class="button danger" disabled="" id="cancelButton" type="button">Cancel safely</button></div>
+</form>
+</aside>
+
+<section class="panel compact-run-panel" aria-live="polite">
+<div class="compact-run-heading"><div class="step-number blue">2</div><div><h2>Current run / compact result</h2><p>Read the outcome here. Open the journey only when you want to inspect how it was produced.</p></div><span class="status-badge waiting" id="compactRunStatus">waiting</span></div>
+<div class="compact-run-grid">
+<div><span>run_id</span><strong id="compactRunId">—</strong></div><div><span>model</span><strong id="compactModel">—</strong></div><div><span>task</span><strong id="compactTask">—</strong></div><div><span>result</span><strong id="compactPrimaryValue">—</strong></div><div><span>reference</span><strong id="compactReference">—</strong></div><div><span>error / diagnostic</span><strong id="compactError">—</strong></div>
+</div>
+<div class="active-realization-strip" id="activeRealizationStrip"><strong>Resolved realization</strong><span>available after model/task resolution</span></div>
+</section>
+
+<details class="panel matrix-panel" id="modelTaskSurface" open>
+<summary class="matrix-summary"><div class="step-number violet">2B</div><div><strong>Model × Task capability map</strong><small>The public map stays two-dimensional. Select a cell to inspect its internal realization variants.</small></div><span class="matrix-dimension-badge">2 axes only</span></summary>
+<div class="matrix-surface-body">
+<div class="matrix-table-wrap"><table class="capability-matrix" id="capabilityMatrix"><thead></thead><tbody></tbody></table></div>
+<section class="variant-drawer" aria-live="polite">
+<div class="variant-drawer-head"><div><span class="eyebrow">Selected cell</span><h3 id="selectedCellTitle">Choose a Model × Task cell</h3><p id="selectedCellNote">Mappings, state preparation, ansatz, reference, and acceptance remain internal realization records.</p></div><span class="status-badge waiting" id="selectedCellStatus">waiting</span></div>
+<div class="realization-variant-grid" id="realizationVariantGrid"><div class="empty-state">Select a cell in the matrix to inspect its realization variants.</div></div>
+</section>
+</div>
+</details>
+
+<details class="panel return-panel">
+<summary class="return-summary"><div class="step-number blue">2A</div><div><strong>Inspect physical return details</strong><small>Separated judgments, provenance labels, diagnostics, assumptions, and bounded meaning.</small></div></summary>
+<div class="return-details-body">
+<div class="panel-heading return-details-heading"><div><h2>Physical return</h2><p>Estimate, independent reference, distinct judgments, and bounded meaning.</p></div></div>
+<div class="metric-grid">
+<article class="metric-card"><div class="metric-head"><span>Reconstructed energy</span><span class="truth-badge derived">DERIVED</span></div><strong id="resultEnergy">—</strong><small id="resultUncertainty">from measurement counts</small></article>
+<article class="metric-card"><div class="metric-head"><span>Exact / sector reference</span><span class="truth-badge reference">REFERENCE — CLASSICAL</span></div><strong id="resultReference">—</strong><small id="referenceScope">reference policy pending mentor decision for larger problems</small></article>
+<article class="metric-card mini"><span>Absolute error</span><strong id="resultError">—</strong></article><article class="metric-card mini"><span>Acceptance threshold</span><strong id="resultThreshold">—</strong></article>
+</div>
+<div class="mapping-comparison hidden" id="mappingComparisonPanel"></div>
+<div class="judgment-section"><h3>Separated judgments</h3><div class="judgment-list" id="judgmentList"></div></div>
+<div class="diagnostic-grid"><article class="diagnostic-card"><span>QASM semantic fidelity</span><strong id="qasmFidelity">—</strong><small>translation fidelity · not physical-state fidelity</small></article><article class="diagnostic-card"><span>Sector leakage</span><strong id="sectorLeakage">not measured</strong><small id="sectorLeakageNote">available for JW as an ideal local logical-sector diagnostic; not a backend measurement</small></article></div>
+<article class="meaning-card"><div class="metric-head"><span>Bounded physical meaning</span><span class="truth-badge verified">VERIFIED / LIMITED</span></div><p id="physicalStatement">A physical statement will appear after reconstruction and verification.</p><details><summary>Assumptions and limitations</summary><ul id="limitationList"></ul></details></article>
+<article class="execution-card"><strong id="executionLabel">Execution: local simulator</strong><span id="backendLabel">provider target not selected</span><span>hardware submission: not performed</span></article>
+</div>
+</details>
+
+<details class="panel journey-panel" id="journeyDisclosure">
+<summary class="journey-summary"><div class="step-number teal">3</div><div><strong>Full live modelling journey — from entrance to meaning</strong><small>Driven by the same run_pipeline_stream(request) · independent rectangular stations · orange loop for iterative tasks · gray reference branch.</small></div><div class="run-meta"><span id="runIdLabel">No active run</span><span class="status-badge waiting" id="lifecycleBadge">waiting</span></div></summary>
+<div class="run-failure-summary hidden" id="runFailureSummary" role="alert"></div>
+<div class="journey-canvas architectural-journey" id="journeyCanvas">
+<div class="journey-map-label foundation-label"><span>Declared model and task</span><small>One source enters the workflow; every handoff remains inspectable.</small></div>
+<div class="architectural-sequence foundation-sequence">
+<div class="journey-card stage entrance" id="stage-entrance"></div><div class="flow-connector" aria-hidden="true">→</div><div class="journey-card stage physics" id="stage-model"></div><div class="flow-connector" aria-hidden="true">→</div><div class="journey-card stage artifact" id="stage-artifact"></div><div class="flow-connector" aria-hidden="true">→</div><div class="journey-card stage task" id="stage-task"></div>
+</div>
+<div class="task-map-grid">
+<div class="task-main-lane">
+<div class="mapping-runtime hidden" id="mappingRuntime">
+<div class="journey-map-label mapping-label"><span>Analysis-only transformation path</span><small>One FermionOperator splits into eligible mapping plugins, then recombines as a verified comparison report.</small></div>
+<div class="mapping-analysis-map">
+<div class="journey-card stage mapping mapping-analysis-card" id="stage-mapping_analysis"></div>
+<div class="split-connector" aria-hidden="true"><span></span><b>same operator · same ordering · same sector</b><span></span></div>
+<div class="mapping-split-lanes">
+<article class="mapping-live-card jw" id="mappingLaneJW"><div class="mapping-live-head"><strong>Jordan–Wigner</strong><span>waiting</span></div><p>Direct occupation semantics. Resource and equivalence metrics appear after the live run.</p></article>
+<article class="mapping-live-card bk" id="mappingLaneBK"><div class="mapping-live-head"><strong>Bravyi–Kitaev</strong><span>waiting</span></div><p>GF(2) occupation code. Resource and equivalence metrics appear after the live run.</p></article>
+</div>
+<div class="merge-connector" aria-hidden="true"><span></span><b>recombine as one MappingComparisonReport</b><span></span></div>
+<div class="architectural-sequence mapping-output-sequence"><div class="journey-card stage evidence" id="stage-evidence"></div><div class="flow-connector" aria-hidden="true">→</div><div class="journey-card stage quantum" id="stage-reconstruct"></div></div>
+</div>
+<div class="analysis-boundary-note">Analysis boundary: no circuit, shots, simulator, or hardware execution occurs in this task; no optimizer, QASM circuit execution, or VQE claim is made.</div>
+</div>
+
+<div id="variationalRuntimeBody" class="variational-runtime-map">
+<div class="journey-map-label runtime-label"><span id="runtimeTitleText">External variational runtime</span><small id="iterationLabel">iteration —</small></div>
+<div class="vqe-loop-map">
+<div class="loop-caption">classical controller loop</div>
+<div class="optimizer-row architectural-row"><div class="journey-card stage classical" id="stage-optimizer"></div></div>
+<div class="down-flow" aria-hidden="true">↓</div>
+<div class="architectural-sequence runtime-sequence">
+<div class="journey-card stage quantum" id="stage-bind"></div><div class="flow-connector" aria-hidden="true">→</div><div class="journey-card stage quantum" id="stage-measurement"></div><div class="flow-connector" aria-hidden="true">→</div><div class="journey-card stage quantum" id="stage-translation"></div><div class="flow-connector" aria-hidden="true">→</div><div class="journey-card stage quantum" id="stage-execute"></div><div class="flow-connector" aria-hidden="true">→</div><div class="journey-card stage evidence" id="stage-evidence-vqe" data-stage-alias="evidence"></div><div class="flow-connector" aria-hidden="true">→</div><div class="journey-card stage quantum" id="stage-reconstruct-vqe" data-stage-alias="reconstruct"></div>
+</div>
+<div class="down-flow" aria-hidden="true">↓</div>
+<div class="convergence-row architectural-row"><div class="journey-card stage classical convergence" id="stage-convergence"></div></div>
+<div class="loop-return-path" aria-hidden="true"><span>no · new θ</span><b>↺</b></div><div class="loop-exit-label">yes · send best/final estimate to verification</div>
+</div>
+</div>
+</div>
+<aside class="verification-branch" aria-label="Independent reference and verification branch">
+<div class="branch-heading"><span>Independent gray branch</span><small>Reference, verification, and bounded meaning remain distinct from reconstruction.</small></div>
+<div class="journey-card stage reference" id="stage-exact_reference"></div><div class="branch-connector" aria-hidden="true">↓</div><div class="journey-card stage reference" id="stage-verification"></div><div class="branch-connector" aria-hidden="true">↓</div><div class="journey-card stage reference" id="stage-meaning"></div>
+</aside>
+</div>
+<div class="live-strip"><div><span>Latest estimate</span><strong id="latestEnergy">—</strong></div><div><span>Best estimate</span><strong id="bestEnergy">—</strong></div><div><span>Reference</span><strong id="referenceEnergy">—</strong></div><div><span>Events</span><strong id="eventCount">0</strong></div></div>
+</div>
+<details class="details-box inspector" open=""><summary>ProblemArtifact inspector</summary><div class="empty-state" id="artifactInspector">Build a problem to inspect the shared computational contract.</div></details>
+<details class="technical-error-panel hidden" id="technicalErrorPanel"><summary>Technical error log</summary><p>The failed station shows the user-facing explanation. This log is for debugging and reproducibility.</p><button class="button secondary" id="loadTechnicalErrorButton" type="button">Load technical details</button><pre id="technicalErrorLog">No technical error has been loaded.</pre></details>
+</details>
+</div>
+
+<div class="secondary-grid">
+<section class="panel evidence-panel"><div class="panel-heading compact"><div class="step-number amber">4</div><div><h2>Evidence &amp; diagnostics</h2><p>Summaries for every evaluation; full best/final artifacts in the evidence archive.</p></div><a aria-disabled="true" class="button secondary disabled" href="#" id="evidenceDownload">Download evidence ZIP</a></div><div class="history-chart empty-state" id="energyHistory">Energy evaluations will appear here.</div><div class="evidence-meta" id="evidenceMeta"></div></section>
+<section class="panel feedback-panel" id="advisorPanel"><div class="panel-heading compact"><div class="step-number blue">5</div><div><h2>Return arrow / deterministic design feedback</h2><p>Post-run rules read sanitized compatibility, evidence, resources, and telemetry. Cards are grounded facts, verified limitations, or allow-listed hypotheses.</p></div><span class="truth-badge derived" id="advisorBadge">DETERMINISTIC · WAITING</span></div><div class="advisor-status" id="advisorStatus"><span class="feedback-icon">↩</span><div><strong>Waiting for a completed run</strong><p>QCOL remains fully functional when the Advisor is disabled. The Advisor never changes ProblemArtifact, RunResult, Evidence, or verification.</p></div></div><div class="advisor-card-grid" id="advisorCards"></div><pre class="advisor-candidate hidden" id="advisorCandidatePlan"></pre><div class="advisor-safety">Every patch requires explicit approval, resolver validation, the same <code>run_pipeline(request)</code>, new Evidence, and verification as final authority. Phase B explains and proposes; Phase C runs only after explicit approval and never replaces the baseline silently.</div></section>
+<section class="panel phase-c-panel" id="phaseCPanel"><div class="panel-heading compact"><div class="step-number violet">6</div><div><h2>Try / Compare experiment</h2><p>One approved hypothesis becomes a candidate run through the same pipeline, then its evidence is compared with the baseline.</p></div><span class="truth-badge reference" id="phaseCBadge">WAITING</span></div><div class="phase-c-status" id="phaseCStatus"><strong>No candidate experiment yet</strong><p>Outcomes are ADOPT, REJECT, or INCONCLUSIVE. No result is replaced automatically.</p></div><div class="phase-c-result hidden" id="phaseCResult"></div><a class="button secondary disabled" aria-disabled="true" href="#" id="phaseCEvidence">Download comparison Evidence</a></section>
+<section class="panel history-panel"><div class="panel-heading compact"><div class="step-number gray">7</div><div><h2>Run recovery &amp; history</h2><p>Recover an in-memory run after refreshing the browser.</p></div></div><div class="history-controls"><select id="runHistorySelect"><option value="">No saved runs</option></select><button class="button secondary" id="loadRunButton" type="button">Load run</button><button class="button ghost" id="refreshRunsButton" type="button">Refresh</button></div><div class="source-ledger empty-state" id="sourceLedger">The source ledger appears after a run is created.</div></section>
+</div>
+</main>
+<footer class="footer"><span>QCOL model registry · callable resolver · one scientific core</span><span><a href="/docs" rel="noopener" target="_blank">API docs</a> · <a href="/client" rel="noopener" target="_blank">minimal SSE client</a></span></footer>
+<script defer="" src="/assets/app.js?v=a32c-wp12-ui-r6&ext=post-phase-c-qho-schema-r1"></script>
+</body>
+</html>

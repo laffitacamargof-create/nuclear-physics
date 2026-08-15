@@ -1,0 +1,3 @@
+from .contract import QHO_PAIRING_MODEL_CONTRACT
+
+__all__ = ["QHO_PAIRING_MODEL_CONTRACT"]
