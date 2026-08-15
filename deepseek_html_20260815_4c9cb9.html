@@ -1,0 +1,482 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quantum App Studio · Selector de Circuitos</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            background: linear-gradient(135deg, #0a0e1a 0%, #0d1220 100%);
+            color: #e2e8f0;
+            font-family: 'Segoe UI', 'Inter', system-ui, sans-serif;
+            min-height: 100vh;
+            padding: 1.5rem;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        h1 {
+            font-size: 1.8rem;
+            font-weight: 600;
+            background: linear-gradient(135deg, #00ffdd, #0088ff);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            margin-bottom: 0.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        .subtitle {
+            color: #8aa0c4;
+            margin-bottom: 2rem;
+            font-size: 0.85rem;
+            border-left: 3px solid #00ffdd;
+            padding-left: 1rem;
+        }
+        .circuit-selector {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 2rem;
+            flex-wrap: wrap;
+        }
+        .circuit-card {
+            background: #1e293b;
+            border: 1px solid #334155;
+            border-radius: 1rem;
+            padding: 1.2rem;
+            flex: 1;
+            min-width: 200px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            text-align: center;
+        }
+        .circuit-card:hover {
+            border-color: #00ffdd;
+            transform: translateY(-2px);
+            background: #2d3a4f;
+        }
+        .circuit-card.selected {
+            border-color: #00ffdd;
+            background: linear-gradient(135deg, #1a3a5c, #0d2a4a);
+            box-shadow: 0 0 20px rgba(0, 255, 221, 0.2);
+        }
+        .circuit-card h3 {
+            font-size: 1.2rem;
+            margin-bottom: 0.5rem;
+            color: #38bdf8;
+        }
+        .circuit-card p {
+            font-size: 0.7rem;
+            color: #94a3b8;
+        }
+        .circuit-badge {
+            display: inline-block;
+            background: #0f172a;
+            padding: 0.2rem 0.6rem;
+            border-radius: 20px;
+            font-size: 0.65rem;
+            margin-top: 0.5rem;
+            color: #00ffdd;
+        }
+        .panel {
+            background: #111827;
+            border-radius: 1rem;
+            padding: 1.2rem;
+            margin-bottom: 1.2rem;
+            border: 1px solid #1e3058;
+        }
+        .panel-title {
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            color: #00ffdd;
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        .circuit-diagram {
+            background: #0a0e1a;
+            border-radius: 0.75rem;
+            padding: 1rem;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.7rem;
+            overflow-x: auto;
+            white-space: pre;
+            color: #a5f3c3;
+            border: 1px solid #1e3058;
+        }
+        .btn-group {
+            display: flex;
+            gap: 0.8rem;
+            margin-top: 1rem;
+            flex-wrap: wrap;
+        }
+        .btn {
+            padding: 0.6rem 1.2rem;
+            border: none;
+            border-radius: 0.5rem;
+            font-weight: 600;
+            font-size: 0.8rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-family: monospace;
+        }
+        .btn-primary {
+            background: linear-gradient(135deg, #0088ff, #00aaff);
+            color: white;
+        }
+        .btn-primary:hover {
+            transform: scale(1.02);
+            box-shadow: 0 4px 15px rgba(0, 136, 255, 0.4);
+        }
+        .btn-secondary {
+            background: #1e293b;
+            color: #94a3b8;
+            border: 1px solid #334155;
+        }
+        .btn-secondary:hover {
+            background: #2d3a4f;
+            color: white;
+        }
+        .result-container {
+            background: #0a0e1a;
+            border-radius: 0.75rem;
+            padding: 1rem;
+            margin-top: 0.5rem;
+        }
+        .result-stats {
+            display: flex;
+            gap: 1rem;
+            flex-wrap: wrap;
+            margin-bottom: 1rem;
+        }
+        .stat-card {
+            background: #1e293b;
+            border-radius: 0.5rem;
+            padding: 0.6rem 1rem;
+            flex: 1;
+            text-align: center;
+        }
+        .stat-label {
+            font-size: 0.6rem;
+            color: #94a3b8;
+            text-transform: uppercase;
+        }
+        .stat-value {
+            font-size: 1.1rem;
+            font-weight: bold;
+            color: #00ffdd;
+            font-family: monospace;
+        }
+        .measurements {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            margin-top: 0.8rem;
+        }
+        .measure-badge {
+            background: #1e293b;
+            padding: 0.3rem 0.8rem;
+            border-radius: 20px;
+            font-family: monospace;
+            font-size: 0.7rem;
+            border: 1px solid #334155;
+        }
+        .measure-badge.high {
+            background: #00ffdd20;
+            border-color: #00ffdd;
+            color: #00ffdd;
+        }
+        .loading {
+            text-align: center;
+            padding: 2rem;
+            color: #00ffdd;
+            font-family: monospace;
+        }
+        .error {
+            color: #ff4466;
+            background: #ff446610;
+            padding: 0.8rem;
+            border-radius: 0.5rem;
+            border: 1px solid #ff4466;
+        }
+        footer {
+            text-align: center;
+            font-size: 0.6rem;
+            color: #4a7a9b;
+            margin-top: 1.5rem;
+        }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        .pulse {
+            animation: pulse 1s infinite;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h1>
+        <span>⚛️</span> Quantum Circuit Selector
+    </h1>
+    <div class="subtitle">
+        Elige un circuito, visualiza su estructura y ejecuta la simulación cuántica
+    </div>
+
+    <!-- Selector de circuitos -->
+    <div class="circuit-selector">
+        <div class="circuit-card" id="btn-bell" data-circuit="bell">
+            <h3>🔗 Circuito Bell</h3>
+            <p>2 qubits entrelazados</p>
+            <span class="circuit-badge">Hadamard + CNOT</span>
+        </div>
+        <div class="circuit-card" id="btn-ghz" data-circuit="ghz">
+            <h3>🌀 Circuito GHZ</h3>
+            <p>3 qubits entrelazados</p>
+            <span class="circuit-badge">Hadamard + 2x CNOT</span>
+        </div>
+    </div>
+
+    <!-- Panel del circuito -->
+    <div class="panel">
+        <div class="panel-title">
+            <span>📐</span> REPRESENTACIÓN DEL CIRCUITO
+        </div>
+        <div class="circuit-diagram" id="circuit-display">
+            <span style="color:#8aa0c4;">Selecciona un circuito para visualizarlo...</span>
+        </div>
+    </div>
+
+    <!-- Panel de información -->
+    <div class="panel">
+        <div class="panel-title">
+            <span>📖</span> INFORMACIÓN DEL CIRCUITO
+        </div>
+        <div id="circuit-info" style="font-size: 0.75rem; color: #94a3b8;">
+            Selecciona un circuito arriba
+        </div>
+    </div>
+
+    <!-- Botones de acción -->
+    <div class="btn-group">
+        <button class="btn btn-primary" id="run-btn" disabled>
+            🚀 EJECUTAR SIMULACIÓN
+        </button>
+        <button class="btn btn-secondary" id="refresh-btn">
+            🔄 REFRESCAR VISTA
+        </button>
+    </div>
+
+    <!-- Panel de resultados -->
+    <div class="panel">
+        <div class="panel-title">
+            <span>📊</span> RESULTADOS DE LA SIMULACIÓN
+        </div>
+        <div id="result-area">
+            <div style="text-align: center; color: #4a7a9b; padding: 1.5rem;">
+                Ejecuta un circuito para ver los resultados aquí
+            </div>
+        </div>
+    </div>
+
+    <footer>
+        ⚛️ Quantum App Studio · Powered by Qiskit · Simulación local/remota
+    </footer>
+</div>
+
+<script>
+    // Estado actual
+    let currentCircuit = null;
+    let isLoading = false;
+
+    // Elementos DOM
+    const circuitDisplay = document.getElementById('circuit-display');
+    const circuitInfo = document.getElementById('circuit-info');
+    const runBtn = document.getElementById('run-btn');
+    const refreshBtn = document.getElementById('refresh-btn');
+    const resultArea = document.getElementById('result-area');
+    const bellCard = document.getElementById('btn-bell');
+    const ghzCard = document.getElementById('btn-ghz');
+
+    // Función para mostrar loading
+    function showLoading(target, message = "⏳ Procesando...") {
+        if (target === 'circuit') {
+            circuitDisplay.innerHTML = `<div style="color: #00ffdd; text-align: center;">🔄 ${message}</div>`;
+        } else if (target === 'result') {
+            resultArea.innerHTML = `<div style="text-align: center; padding: 2rem;" class="loading"><span class="pulse">● ● ●</span> ${message}</div>`;
+        }
+    }
+
+    // Función para mostrar error
+    function showError(area, message) {
+        if (area === 'result') {
+            resultArea.innerHTML = `<div class="error">❌ Error: ${message}</div>`;
+        } else if (area === 'circuit') {
+            circuitDisplay.innerHTML = `<div style="color: #ff4466;">❌ Error al cargar: ${message}</div>`;
+        }
+    }
+
+    // Actualizar selección visual
+    function updateSelection(circuit) {
+        currentCircuit = circuit;
+        if (circuit === 'bell') {
+            bellCard.classList.add('selected');
+            ghzCard.classList.remove('selected');
+        } else if (circuit === 'ghz') {
+            ghzCard.classList.add('selected');
+            bellCard.classList.remove('selected');
+        }
+        runBtn.disabled = false;
+        // Cargar circuito y info
+        loadCircuitDiagram(circuit);
+        loadCircuitInfo(circuit);
+    }
+
+    // Cargar dibujo del circuito
+    async function loadCircuitDiagram(circuit) {
+        if (!circuit) return;
+        showLoading('circuit', "Generando diagrama...");
+        try {
+            const diagram = await window.pyCall("dibujar_circuito", circuit);
+            circuitDisplay.innerHTML = `<pre style="margin: 0; font-family: 'JetBrains Mono', monospace;">${diagram || 'Circuito generado'}</pre>`;
+        } catch (error) {
+            circuitDisplay.innerHTML = `<pre style="color: #ff4466;">Error al generar: ${error.message}</pre>`;
+        }
+    }
+
+    // Cargar información del circuito
+    async function loadCircuitInfo(circuit) {
+        if (!circuit) return;
+        try {
+            const info = await window.pyCall("info_circuito", circuit);
+            let parsed = info;
+            if (typeof info === 'string') {
+                try { parsed = JSON.parse(info); } catch(e) { parsed = { raw: info }; }
+            }
+            if (parsed.error) {
+                circuitInfo.innerHTML = `<span style="color:#ff4466;">${parsed.error}</span>`;
+            } else {
+                circuitInfo.innerHTML = `
+                    <div style="display: flex; flex-direction: column; gap: 0.4rem;">
+                        <div><strong style="color: #38bdf8;">🔬 Nombre:</strong> ${parsed.nombre || 'N/A'}</div>
+                        <div><strong style="color: #38bdf8;">💠 Qubits:</strong> ${parsed.qubits || 'N/A'}</div>
+                        <div><strong style="color: #38bdf8;">🚪 Puertas:</strong> ${Array.isArray(parsed.puertas) ? parsed.puertas.join(' → ') : parsed.puertas || 'N/A'}</div>
+                        <div><strong style="color: #38bdf8;">📝 Descripción:</strong> ${parsed.descripcion || 'N/A'}</div>
+                    </div>
+                `;
+            }
+        } catch (error) {
+            circuitInfo.innerHTML = `<span style="color:#ff4466;">Error: ${error.message}</span>`;
+        }
+    }
+
+    // Ejecutar simulación
+    async function runSimulation() {
+        if (!currentCircuit || isLoading) return;
+        isLoading = true;
+        runBtn.disabled = true;
+        runBtn.innerHTML = "⏳ EJECUTANDO...";
+        showLoading('result', "Ejecutando simulación cuántica...");
+
+        try {
+            const result = await window.pyCall("ejecutar_circuito", currentCircuit, 1024);
+            let parsed;
+            if (typeof result === 'string') {
+                try { parsed = JSON.parse(result); } catch(e) { parsed = { mediciones: result }; }
+            } else {
+                parsed = result;
+            }
+
+            if (parsed.error) {
+                showError('result', parsed.error);
+            } else {
+                const measurements = parsed.mediciones || {};
+                const shots = parsed.shots || 1024;
+                const maxState = parsed.estado_mas_probable || "N/A";
+                const maxProb = (parsed.probabilidad_max * 100).toFixed(1);
+
+                // Generar badges de mediciones
+                let measurementsHtml = '';
+                const entries = Object.entries(measurements);
+                if (entries.length > 0) {
+                    const maxCount = Math.max(...entries.map(([,c]) => c));
+                    measurementsHtml = '<div class="measurements">';
+                    for (const [state, count] of entries) {
+                        const percent = ((count / shots) * 100).toFixed(1);
+                        const isHighest = count === maxCount;
+                        measurementsHtml += `
+                            <div class="measure-badge ${isHighest ? 'high' : ''}">
+                                ${state} → ${count} (${percent}%)
+                            </div>
+                        `;
+                    }
+                    measurementsHtml += '</div>';
+                } else {
+                    measurementsHtml = '<div style="color:#8aa0c4;">No hay mediciones disponibles</div>';
+                }
+
+                resultArea.innerHTML = `
+                    <div class="result-stats">
+                        <div class="stat-card">
+                            <div class="stat-label">CIRCUITO</div>
+                            <div class="stat-value">${parsed.circuito || currentCircuit.toUpperCase()}</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-label">SHOTS</div>
+                            <div class="stat-value">${shots}</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-label">ESTADO MÁS PROBABLE</div>
+                            <div class="stat-value">${maxState}</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-label">PROBABILIDAD MÁXIMA</div>
+                            <div class="stat-value">${maxProb}%</div>
+                        </div>
+                    </div>
+                    <div style="margin-top: 0.8rem;">
+                        <div style="font-size: 0.7rem; color: #8aa0c4; margin-bottom: 0.5rem;">📊 DISTRIBUCIÓN DE MEDICIONES</div>
+                        ${measurementsHtml}
+                    </div>
+                `;
+            }
+        } catch (error) {
+            showError('result', error.message);
+            console.error("Error en simulación:", error);
+        } finally {
+            isLoading = false;
+            runBtn.disabled = false;
+            runBtn.innerHTML = "🚀 EJECUTAR SIMULACIÓN";
+        }
+    }
+
+    // Refrescar vista actual
+    async function refreshView() {
+        if (currentCircuit) {
+            await loadCircuitDiagram(currentCircuit);
+            await loadCircuitInfo(currentCircuit);
+        }
+    }
+
+    // Eventos
+    bellCard.addEventListener('click', () => updateSelection('bell'));
+    ghzCard.addEventListener('click', () => updateSelection('ghz'));
+    runBtn.addEventListener('click', runSimulation);
+    refreshBtn.addEventListener('click', refreshView);
+
+    // Seleccionar Bell por defecto al cargar
+    setTimeout(() => {
+        updateSelection('bell');
+    }, 500);
+</script>
+</body>
+</html>
