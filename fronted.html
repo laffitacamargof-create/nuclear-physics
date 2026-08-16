@@ -1,0 +1,783 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1" name="viewport"/>
+<title>QCOL — Scientific Modelling Journey</title>
+
+<style>
+:root {
+  --bg: #0b1018;
+  --panel: #121a25;
+  --panel-2: #0e1620;
+  --line: #263448;
+  --ink: #e7edf5;
+  --muted: #94a3b8;
+  --purple: #9b87f5;
+  --purple-bg: #201b3d;
+  --teal: #36d6ae;
+  --teal-bg: #0f2d28;
+  --amber: #f1a73b;
+  --amber-bg: #34230c;
+  --blue: #5ea8ff;
+  --blue-bg: #10243c;
+  --gray: #a3abb8;
+  --green: #4bd58b;
+  --red: #ff7d78;
+  --yellow: #f2c75c;
+  --shadow: 0 18px 45px rgba(0,0,0,.22);
+  --radius: 15px;
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+* { box-sizing: border-box; }
+html { color-scheme: dark; }
+body { margin: 0; background: radial-gradient(circle at top, #111b2a 0, var(--bg) 42%); color: var(--ink); min-height: 100vh; }
+button, input, select, textarea { font: inherit; }
+a { color: var(--blue); }
+code { font-family: "SFMono-Regular", Consolas, monospace; color: #b9c9dd; }
+.topbar { min-height: 76px; padding: 15px 24px; border-bottom: 1px solid var(--line); background: rgba(8,13,21,.9); backdrop-filter: blur(12px); display: flex; justify-content: space-between; gap: 18px; align-items: center; position: sticky; top: 0; z-index: 20; }
+.brand-block { display: flex; align-items: center; gap: 13px; }
+.brand-mark { width: 44px; height: 44px; display: grid; place-items: center; border-radius: 12px; border: 1px solid #3c6195; background: linear-gradient(145deg,#152640,#0d1726); font-size: 24px; font-weight: 800; color: #dbeaff; }
+h1 { font-size: 19px; margin: 0; letter-spacing: -.01em; }
+.brand-block p { margin: 3px 0 0; color: var(--teal); font-size: 12px; }
+.top-actions { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
+.phase-badge, .health-badge, .status-badge, .truth-badge { border: 1px solid var(--line); border-radius: 999px; font-size: 10px; font-weight: 800; letter-spacing: .04em; padding: 5px 9px; text-transform: uppercase; white-space: nowrap; }
+.phase-badge { color: var(--blue); background: var(--blue-bg); }
+.health-badge.ok { color: var(--green); background: #102b20; border-color: #245d41; }
+.health-badge.waiting { color: var(--yellow); background: #2f2811; }
+.health-badge.error { color: var(--red); background: #301719; border-color: #743b3a; }
+.status-badge.queued, .status-badge.waiting { color: var(--gray); background: #222832; }
+.status-badge.running { color: var(--teal); background: var(--teal-bg); border-color: #266f61; }
+.status-badge.cancelling { color: var(--amber); background: var(--amber-bg); border-color: #76531b; }
+.status-badge.completed { color: var(--green); background: #10281c; border-color: #2d704b; }
+.status-badge.cancelled, .status-badge.failed { color: var(--red); background: #301719; border-color: #743b3a; }
+.page-shell { max-width: 1800px; margin: 0 auto; padding: 15px 18px 42px; }
+.notice-strip { margin-bottom: 13px; border: 1px solid #6d4d17; background: #2b1d08; color: #f4d49d; border-radius: 11px; padding: 9px 12px; font-size: 12px; }
+.primary-grid { display: grid; grid-template-columns: minmax(285px,.83fr) minmax(620px,1.75fr) minmax(300px,.9fr); gap: 12px; align-items: start; }
+.secondary-grid { display: grid; grid-template-columns: 1.25fr 1fr .8fr; gap: 12px; margin-top: 12px; align-items: start; }
+.panel { background: linear-gradient(180deg, rgba(19,27,39,.98), rgba(14,22,32,.98)); border: 1px solid var(--line); border-radius: var(--radius); padding: 13px; box-shadow: var(--shadow); min-width: 0; }
+.panel-heading { display: flex; align-items: flex-start; gap: 10px; margin-bottom: 13px; }
+.panel-heading.compact { align-items: center; }
+.panel-heading h2 { font-size: 14px; margin: 0; }
+.panel-heading p { color: var(--muted); font-size: 11px; margin: 3px 0 0; line-height: 1.4; }
+.step-number { min-width: 29px; height: 29px; border-radius: 8px; display: grid; place-items: center; font-weight: 850; }
+.step-number.purple { background: var(--purple-bg); color: var(--purple); }
+.step-number.teal { background: var(--teal-bg); color: var(--teal); }
+.step-number.blue { background: var(--blue-bg); color: var(--blue); }
+.step-number.amber { background: var(--amber-bg); color: var(--amber); }
+.step-number.gray { background: #252b34; color: #c7ced8; }
+.run-meta { margin-left: auto; display: flex; align-items: center; gap: 7px; color: var(--muted); font: 11px "SFMono-Regular",Consolas,monospace; }
+.model-cards { display: grid; grid-template-columns: 1fr; gap: 7px; margin-bottom: 9px; }
+.model-card { width: 100%; text-align: left; border: 1px solid var(--line); background: #101925; color: var(--ink); border-radius: 10px; padding: 10px 11px; cursor: pointer; transition: .15s ease; }
+.model-card:hover { transform: translateY(-1px); border-color: #4c6586; }
+.model-card.active { border-color: var(--purple); background: var(--purple-bg); box-shadow: 0 0 0 1px rgba(155,135,245,.25); }
+.model-card strong { display: block; font-size: 12px; }
+.model-card small { display: block; color: var(--muted); margin-top: 3px; line-height: 1.35; }
+.model-card .support { display: inline-flex; margin-top: 7px; color: var(--teal); font-size: 9px; text-transform: uppercase; font-weight: 800; }
+.support-note { color: #b9c7d9; background: #0e1723; border-left: 3px solid var(--blue); padding: 8px 9px; margin-bottom: 10px; font-size: 11px; line-height: 1.45; border-radius: 0 8px 8px 0; }
+.model-fields { border-top: 1px solid var(--line); padding-top: 9px; }
+.hidden { display: none !important; }
+.form-grid { display: grid; gap: 8px; }
+.form-grid.two-columns { grid-template-columns: repeat(2,minmax(0,1fr)); }
+label { display: grid; gap: 4px; color: #c7d1de; font-size: 10px; }
+input, select, textarea { width: 100%; border: 1px solid #33445c; background: #0b131e; color: var(--ink); border-radius: 8px; padding: 8px 9px; outline: none; min-height: 34px; }
+textarea { min-height: 70px; resize: vertical; font-family: "SFMono-Regular",Consolas,monospace; }
+input:focus, select:focus, textarea:focus { border-color: var(--blue); box-shadow: 0 0 0 2px rgba(94,168,255,.12); }
+.details-box { border: 1px solid var(--line); border-radius: 10px; padding: 8px; margin-top: 9px; background: rgba(8,14,22,.48); }
+.details-box summary { cursor: pointer; color: #cfd8e4; font-size: 11px; font-weight: 750; }
+.details-box[open] summary { margin-bottom: 8px; }
+.button-row { display: flex; gap: 8px; margin-top: 10px; }
+.button { border: 1px solid var(--line); color: var(--ink); background: #172234; border-radius: 8px; padding: 8px 12px; text-decoration: none; cursor: pointer; font-size: 11px; display: inline-flex; align-items: center; justify-content: center; }
+.button:hover:not(:disabled) { filter: brightness(1.12); }
+.button.primary { flex: 1; background: linear-gradient(90deg,#226b63,#188d7a); border-color: #2ca990; font-weight: 750; }
+.button.secondary { background: #152033; }
+.button.ghost { background: transparent; }
+.button.danger { color: #ffaaa4; border-color: #6c3434; background: #2c171a; }
+.button:disabled, .button.disabled { opacity: .45; pointer-events: none; }
+.form-error { margin-top: 9px; border: 1px solid #7a3a38; color: #ffb4ae; background: #321719; border-radius: 8px; padding: 8px; font-size: 11px; white-space: pre-wrap; }
+.inspector { max-height: 410px; overflow: auto; }
+.inspector-grid { display: grid; gap: 5px; font-size: 10px; }
+.inspector-row { display: flex; justify-content: space-between; gap: 10px; border-bottom: 1px dashed #28364a; padding: 4px 0; }
+.inspector-row span { color: var(--muted); }
+.inspector-row strong { text-align: right; overflow-wrap: anywhere; }
+.journey-canvas { min-height: 610px; }
+.live-strip { display: grid; grid-template-columns: repeat(4,1fr); gap: 7px; margin-top: 9px; }
+.live-strip > div { border: 1px solid var(--line); border-radius: 8px; padding: 7px; background: #0c141e; }
+.live-strip span { color: var(--muted); font-size: 8px; display: block; }
+.live-strip strong { font-size: 11px; }
+.metric-grid { display: grid; grid-template-columns: repeat(2,1fr); gap: 7px; }
+.metric-card, .diagnostic-card, .meaning-card, .execution-card { border: 1px solid var(--line); border-radius: 10px; padding: 9px; background: #0d1520; }
+.metric-card strong { display: block; font-size: 18px; margin-top: 8px; }
+.metric-card small, .diagnostic-card small { display: block; color: var(--muted); font-size: 9px; margin-top: 3px; line-height: 1.35; }
+.metric-card.mini strong { font-size: 12px; }
+.metric-head { display: flex; justify-content: space-between; gap: 6px; align-items: flex-start; font-size: 9px; color: #b9c5d4; }
+.truth-badge { font-size: 7px; padding: 3px 5px; }
+.truth-badge.derived { color: var(--teal); background: #102921; }
+.truth-badge.reference { color: #d2d7df; background: #222832; }
+.truth-badge.verified { color: var(--green); background: #10281c; }
+.truth-badge.illustrative { color: var(--amber); background: var(--amber-bg); }
+.judgment-section { margin-top: 11px; }
+.judgment-section h3 { font-size: 11px; margin: 0 0 7px; }
+.judgment-list { display: grid; gap: 5px; }
+.judgment { border: 1px solid var(--line); border-radius: 8px; padding: 7px; background: #0d1520; }
+.judgment-line { display: flex; justify-content: space-between; gap: 8px; font-size: 9px; }
+.judgment-line strong { font-size: 9px; }
+.judgment p { margin: 4px 0 0; color: var(--muted); font-size: 8px; line-height: 1.4; }
+.judge-pass { color: var(--green); }
+.judge-review, .judge-limited { color: var(--amber); }
+.judge-fail { color: var(--red); }
+.judge-not_run, .judge-not_applicable, .judge-waiting { color: var(--gray); }
+.diagnostic-grid { display: grid; grid-template-columns: repeat(2,1fr); gap: 7px; margin-top: 9px; }
+.diagnostic-card strong { display: block; font-size: 13px; margin-top: 6px; }
+.meaning-card { margin-top: 9px; }
+.meaning-card p { color: #c0cbd8; font-size: 10px; line-height: 1.5; }
+.meaning-card details { font-size: 9px; color: var(--muted); }
+.meaning-card ul { padding-left: 17px; }
+.execution-card { margin-top: 9px; border-color: #684815; background: #2c1e08; color: #f0c981; font-size: 9px; display: grid; gap: 3px; }
+.history-chart { min-height: 160px; }
+.chart-bars { display: flex; align-items: flex-end; gap: 5px; height: 120px; border-left: 1px solid #334157; border-bottom: 1px solid #334157; padding: 6px; overflow-x: auto; }
+.chart-bar { min-width: 15px; flex: 1 0 15px; max-width: 34px; background: linear-gradient(180deg,#46dfb3,#167763); border-radius: 3px 3px 0 0; position: relative; }
+.chart-bar:hover::after { content: attr(data-tip); position: absolute; z-index: 3; left: 50%; bottom: calc(100% + 5px); transform: translateX(-50%); background: #05090f; color: white; border: 1px solid #3c4c64; padding: 4px; font-size: 8px; white-space: nowrap; border-radius: 5px; }
+.evidence-meta { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 9px; }
+.evidence-meta span { color: #aebbc9; background: #0c141e; border: 1px solid var(--line); border-radius: 7px; padding: 4px 6px; font-size: 8px; }
+.feedback-icon { font-size: 30px; color: var(--blue); }
+.history-controls { display: grid; gap: 6px; }
+.source-ledger { margin-top: 9px; max-height: 260px; overflow: auto; }
+.ledger-row { border-bottom: 1px solid var(--line); padding: 6px 0; }
+.ledger-row strong { font-size: 9px; display: block; }
+.ledger-row span { color: var(--muted); font-size: 8px; display: block; overflow-wrap: anywhere; }
+.empty-state { color: var(--muted); font-size: 10px; font-style: italic; padding: 9px 0; }
+.footer { max-width: 1800px; margin: 0 auto; border-top: 1px solid var(--line); padding: 13px 18px 25px; color: var(--muted); font-size: 10px; display: flex; justify-content: space-between; gap: 10px; }
+@media (max-width: 1300px) {
+  .primary-grid { grid-template-columns: 320px 1fr; }
+  .return-panel { grid-column: 1 / -1; }
+  .secondary-grid { grid-template-columns: 1fr 1fr; }
+  .history-panel { grid-column: 1 / -1; }
+}
+@media (max-width: 880px) {
+  .topbar { position: static; }
+  .primary-grid, .secondary-grid { grid-template-columns: 1fr; }
+  .return-panel, .history-panel { grid-column: auto; }
+  .form-grid.two-columns, .metric-grid { grid-template-columns: 1fr; }
+}
+@media (max-width: 560px) {
+  .topbar, .footer { flex-direction: column; align-items: flex-start; }
+  .page-shell { padding: 10px; }
+  .live-strip, .diagnostic-grid { grid-template-columns: 1fr; }
+}
+
+.problem-contract {
+  border: 1px solid rgba(139,130,240,.45);
+  background: rgba(75,64,148,.12);
+  border-radius: 12px;
+  padding: 14px;
+  margin: 10px 0 14px;
+}
+.contract-heading {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: center;
+  margin-bottom: 7px;
+}
+.contract-heading strong { color: var(--violet); }
+.contract-heading span {
+  color: var(--violet);
+  font-family: var(--mono);
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: .04em;
+}
+.problem-contract p { margin: 5px 0 10px; color: var(--dim); }
+.problem-contract small { color: var(--mut); }
+.contract-fixed {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 9px;
+}
+.contract-fixed span {
+  border: 1px solid var(--line);
+  background: var(--panel2);
+  border-radius: 999px;
+  padding: 4px 8px;
+  color: var(--dim);
+  font-size: 11px;
+}
+.form-grid.four-columns { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.form-grid.three-columns { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.form-grid.epsilon-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.field-section-label {
+  margin: 12px 0 7px;
+  color: var(--ink);
+  font-size: 12px;
+  font-weight: 600;
+}
+.mapping-declaration {
+  display: grid;
+  gap: .25rem;
+  margin: .75rem 0;
+  padding: .75rem .9rem;
+  border: 1px solid #6d5bd0;
+  border-radius: .75rem;
+  background: rgba(109, 91, 208, .07);
+}
+.mapping-declaration strong { color: #4b3bb0; }
+.mapping-declaration span { font-weight: 600; }
+.mapping-declaration small { color: #5c6675; }
+</style>
+</head>
+<body>
+<header class="topbar">
+<div class="brand-block"><div class="brand-mark">Q</div><div><h1>QCOL — Scientific Modelling Journey</h1><p>Nuclear physics ⇄ quantum computation · no-code by default, inspectable by choice</p></div></div>
+<div class="top-actions"><span class="health-badge waiting" id="apiHealth">API checking</span><span class="phase-badge">PHASE C · TRY / COMPARE · POST-C QHO SCHEMA UI · R9</span><button class="button secondary" id="newRunButton" type="button">New run</button></div>
+</header>
+
+<main class="page-shell">
+<section class="notice-strip route-banner"><div><strong>Execution boundary:</strong> the selected IBM / Google / AWS provider is a target label. The current release executes circuit tasks on the local Cirq simulator; provider adapters and QPU submission belong to Phase 5. Mapping analysis is deterministic and uses no backend. The bounded general spin-orbital ground-state route executes Jordan–Wigner on the local simulator; Bravyi–Kitaev remains analysis-only. The oscillator entrance is generated from four independent QHO ModelContracts; all four cells remain experimental pending model-specific promotion.</div></section>
+
+<div class="primary-grid">
+<aside class="panel model-panel">
+<div class="panel-heading"><div class="step-number purple">1</div><div><h2>Physics modelling entrance</h2><p>Declare the physical system first. QCOL builds the supported quantum workflow internally.</p></div></div>
+<div aria-label="Physical model family" class="model-cards" id="modelCards"></div>
+<div class="support-note" id="modelSupportNote"></div>
+<details class="details-box scientific-core-box" open><summary>Scientific core — read-only contract projection</summary><div id="scientificCoreInspector"><div class="empty-state">Choose a model to inspect its scientific core.</div></div></details>
+<form id="runForm" novalidate="">
+<div class="model-fields" id="fermionFields"><div class="model-fields hidden" id="spinFields"></div></div>
+<div class="model-fields hidden" id="oscillatorFields"></div>
+<div class="model-fields hidden" id="customFields"></div>
+<details class="details-box" open=""><summary>Run controls</summary><div class="form-grid two-columns">
+<label style="grid-column:1/-1"><span>Scientific task</span><select id="taskId"></select><small id="taskSupportNote">Choose a runnable model × task cell.</small></label>
+<label><span>Run mode</span><select id="runMode"><option value="vqe">External VQE loop (COBYLA)</option><option value="single_evaluation">Single validated θ evaluation</option></select></label>
+<label><span>Provider target</span><select id="targetBackend"><option value="ibm">IBM</option><option value="google">Google</option><option value="aws">AWS</option></select></label>
+<label><span>Shots per measurement group</span><input id="shots" min="64" step="64" type="number" value="1024"/></label>
+<label><span>Maximum energy evaluations</span><input id="maxEvaluations" max="500" min="1" type="number" value="24"/></label>
+<label><span>Energy tolerance</span><input id="energyTolerance" min="0" step="0.0001" type="number" value="0.002"/></label>
+<label><span>Acceptance absolute floor</span><input id="acceptanceFloor" min="0" step="0.001" type="number" value="0.05"/></label>
+<label><span>Seed</span><input id="seed" step="1" type="number" value="42"/></label>
+<label><span>Initial θ (optional, comma-separated)</span><input id="initialParameters" placeholder="leave blank for the declared strategy" type="text"/></label>
+</div></details>
+<div class="form-error hidden" id="formError" role="alert"></div>
+<div class="button-row"><button class="button primary" id="buildRunButton" type="submit">Build &amp; Run</button><button class="button danger" disabled="" id="cancelButton" type="button">Cancel safely</button></div>
+</form>
+</aside>
+
+<section class="panel compact-run-panel" aria-live="polite">
+<div class="compact-run-heading"><div class="step-number blue">2</div><div><h2>Current run / compact result</h2><p>Read the outcome here. Open the journey only when you want to inspect how it was produced.</p></div><span class="status-badge waiting" id="compactRunStatus">waiting</span></div>
+<div class="compact-run-grid">
+<div><span>run_id</span><strong id="compactRunId">—</strong></div><div><span>model</span><strong id="compactModel">—</strong></div><div><span>task</span><strong id="compactTask">—</strong></div><div><span>result</span><strong id="compactPrimaryValue">—</strong></div><div><span>reference</span><strong id="compactReference">—</strong></div><div><span>error / diagnostic</span><strong id="compactError">—</strong></div>
+</div>
+<div class="active-realization-strip" id="activeRealizationStrip"><strong>Resolved realization</strong><span>available after model/task resolution</span></div>
+</section>
+
+<details class="panel return-panel">
+<summary class="return-summary"><div class="step-number blue">2A</div><div><strong>Inspect physical return details</strong><small>Separated judgments, provenance labels, diagnostics, assumptions, and bounded meaning.</small></div></summary>
+<div class="return-details-body">
+<div class="panel-heading return-details-heading"><div><h2>Physical return</h2><p>Estimate, independent reference, distinct judgments, and bounded meaning.</p></div></div>
+<div class="metric-grid">
+<article class="metric-card"><div class="metric-head"><span>Reconstructed energy</span><span class="truth-badge derived">DERIVED</span></div><strong id="resultEnergy">—</strong><small id="resultUncertainty">from measurement counts</small></article>
+<article class="metric-card"><div class="metric-head"><span>Exact / sector reference</span><span class="truth-badge reference">REFERENCE — CLASSICAL</span></div><strong id="resultReference">—</strong><small id="referenceScope">reference policy pending mentor decision for larger problems</small></article>
+<article class="metric-card mini"><span>Absolute error</span><strong id="resultError">—</strong></article><article class="metric-card mini"><span>Acceptance threshold</span><strong id="resultThreshold">—</strong></article>
+</div>
+<div class="mapping-comparison hidden" id="mappingComparisonPanel"></div>
+<div class="judgment-section"><h3>Separated judgments</h3><div class="judgment-list" id="judgmentList"></div></div>
+<div class="diagnostic-grid"><article class="diagnostic-card"><span>QASM semantic fidelity</span><strong id="qasmFidelity">—</strong><small>translation fidelity · not physical-state fidelity</small></article><article class="diagnostic-card"><span>Sector leakage</span><strong id="sectorLeakage">not measured</strong><small id="sectorLeakageNote">available for JW as an ideal local logical-sector diagnostic; not a backend measurement</small></article></div>
+<article class="meaning-card"><div class="metric-head"><span>Bounded physical meaning</span><span class="truth-badge verified">VERIFIED / LIMITED</span></div><p id="physicalStatement">A physical statement will appear after reconstruction and verification.</p><details><summary>Assumptions and limitations</summary><ul id="limitationList"></ul></details></article>
+<article class="execution-card"><strong id="executionLabel">Execution: local simulator</strong><span id="backendLabel">provider target not selected</span><span>hardware submission: not performed</span></article>
+</div>
+</details>
+
+<details class="panel journey-panel" id="journeyDisclosure">
+<summary class="journey-summary"><div class="step-number teal">3</div><div><strong>Full live modelling journey — from entrance to meaning</strong><small>Driven by the same run_pipeline_stream(request) · independent rectangular stations · orange loop for iterative tasks · gray reference branch.</small></div><div class="run-meta"><span id="runIdLabel">No active run</span><span class="status-badge waiting" id="lifecycleBadge">waiting</span></div></summary>
+<div class="run-failure-summary hidden" id="runFailureSummary" role="alert"></div>
+<div class="journey-canvas architectural-journey" id="journeyCanvas">
+<div class="journey-map-label foundation-label"><span>Declared model and task</span><small>One source enters the workflow; every handoff remains inspectable.</small></div>
+<div class="architectural-sequence foundation-sequence">
+<div class="journey-card stage entrance" id="stage-entrance"></div><div class="flow-connector" aria-hidden="true">→</div><div class="journey-card stage physics" id="stage-model"></div><div class="flow-connector" aria-hidden="true">→</div><div class="journey-card stage artifact" id="stage-artifact"></div><div class="flow-connector" aria-hidden="true">→</div><div class="journey-card stage task" id="stage-task"></div>
+</div>
+</div>
+<div class="live-strip"><div><span>Latest estimate</span><strong id="latestEnergy">—</strong></div><div><span>Best estimate</span><strong id="bestEnergy">—</strong></div><div><span>Reference</span><strong id="referenceEnergy">—</strong></div><div><span>Events</span><strong id="eventCount">0</strong></div></div>
+</details>
+</div>
+
+<div class="secondary-grid">
+<section class="panel evidence-panel"><div class="panel-heading compact"><div class="step-number amber">4</div><div><h2>Evidence &amp; diagnostics</h2><p>Summaries for every evaluation; full best/final artifacts in the evidence archive.</p></div><a aria-disabled="true" class="button secondary disabled" href="#" id="evidenceDownload">Download evidence ZIP</a></div><div class="history-chart empty-state" id="energyHistory">Energy evaluations will appear here.</div><div class="evidence-meta" id="evidenceMeta"></div></section>
+<section class="panel feedback-panel" id="advisorPanel"><div class="panel-heading compact"><div class="step-number blue">5</div><div><h2>Return arrow / deterministic design feedback</h2><p>Post-run rules read sanitized compatibility, evidence, resources, and telemetry. Cards are grounded facts, verified limitations, or allow-listed hypotheses.</p></div><span class="truth-badge derived" id="advisorBadge">DETERMINISTIC · WAITING</span></div><div class="advisor-status" id="advisorStatus"><span class="feedback-icon">↩</span><div><strong>Waiting for a completed run</strong><p>QCOL remains fully functional when the Advisor is disabled. The Advisor never changes ProblemArtifact, RunResult, Evidence, or verification.</p></div></div><div class="advisor-card-grid" id="advisorCards"></div><pre class="advisor-candidate hidden" id="advisorCandidatePlan"></pre><div class="advisor-safety">Every patch requires explicit approval, resolver validation, the same <code>run_pipeline(request)</code>, new Evidence, and verification as final authority. Phase B explains and proposes; Phase C runs only after explicit approval and never replaces the baseline silently.</div></section>
+<section class="panel phase-c-panel" id="phaseCPanel"><div class="panel-heading compact"><div class="step-number violet">6</div><div><h2>Try / Compare experiment</h2><p>One approved hypothesis becomes a candidate run through the same pipeline, then its evidence is compared with the baseline.</p></div><span class="truth-badge reference" id="phaseCBadge">WAITING</span></div><div class="phase-c-status" id="phaseCStatus"><strong>No candidate experiment yet</strong><p>Outcomes are ADOPT, REJECT, or INCONCLUSIVE. No result is replaced automatically.</p></div><div class="phase-c-result hidden" id="phaseCResult"></div><a class="button secondary disabled" aria-disabled="true" href="#" id="phaseCEvidence">Download comparison Evidence</a></section>
+<section class="panel history-panel"><div class="panel-heading compact"><div class="step-number gray">7</div><div><h2>Run recovery &amp; history</h2><p>Recover an in-memory run after refreshing the browser.</p></div></div><div class="history-controls"><select id="runHistorySelect"><option value="">No saved runs</option></select><button class="button secondary" id="loadRunButton" type="button">Load run</button><button class="button ghost" id="refreshRunsButton" type="button">Refresh</button></div><div class="source-ledger empty-state" id="sourceLedger">The source ledger appears after a run is created.</div></section>
+</div>
+</main>
+<footer class="footer"><span>QCOL model registry · callable resolver · one scientific core</span><span><a href="/docs" rel="noopener" target="_blank">API docs</a></span></footer>
+
+<script>
+// ============================================================
+// CONEXIÓN CON EL BACKEND - AUTO DETECTA
+// ============================================================
+
+// Detecta automáticamente la URL del backend
+function getApiBase() {
+    // Si estamos en un servidor web (localhost o dominio)
+    const origin = window.location.origin;
+    if (origin && origin !== 'null' && origin !== 'file://') {
+        return origin;
+    }
+    // Si el HTML se abre localmente, usar localhost:8000
+    return 'http://localhost:8000';
+}
+
+const API_BASE = getApiBase();
+
+function apiUrl(path) {
+    const base = API_BASE.endsWith('/') ? API_BASE.slice(0, -1) : API_BASE;
+    const cleanPath = path.startsWith('/') ? path : `/${path}`;
+    return `${base}${cleanPath}`;
+}
+
+console.log('🚀 QCOL Iniciando...');
+console.log('📡 API Base:', API_BASE);
+
+// ============================================================
+// FUNCIONES DE ESTADO
+// ============================================================
+
+const state = {
+    catalog: null,
+    realizationCatalog: null,
+    selectedCellId: null,
+    modelFamily: "fermion_pairing",
+    fermionProblem: "four_level_one_pair",
+    fermionRoute: "reduced_pairing",
+    fermionValues: {},
+    oscillatorModel: null,
+    customRoute: "guided",
+    taskId: "ground_state_energy",
+    runId: null,
+    lastEventId: 0,
+    eventSource: null,
+    snapshot: null,
+    reconnectTimer: null,
+    advisor: null,
+    comparison: null,
+    comparisonPollTimer: null,
+};
+
+const STAGES = [
+    "entrance", "model", "artifact", "task", "optimizer", "mapping_analysis",
+    "bind", "measurement", "translation", "execute", "evidence", "reconstruct",
+    "convergence", "exact_reference", "verification", "meaning"
+];
+
+const $ = (id) => document.getElementById(id);
+const esc = (value) => String(value ?? "—")
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#039;");
+
+function number(value, digits = 6) {
+    if (value === null || value === undefined || value === "NaN") return "—";
+    const n = Number(value);
+    if (!Number.isFinite(n)) return esc(value);
+    return n.toLocaleString(undefined, { maximumSignificantDigits: digits });
+}
+
+function list(value) {
+    if (!value) return "—";
+    if (Array.isArray(value)) return value.join(", ");
+    if (typeof value === "object") return JSON.stringify(value);
+    return String(value);
+}
+
+function setHidden(id, hidden) { $(id).classList.toggle("hidden", hidden); }
+function value(id) { return $(id).value; }
+function intValue(id) { return Number.parseInt(value(id), 10); }
+function floatValue(id) { return Number.parseFloat(value(id)); }
+
+function modelById(id) {
+    return state.catalog?.model_families?.find(item => item.id === id);
+}
+
+// ============================================================
+// FUNCIONES DE API
+// ============================================================
+
+async function apiJson(url, options = {}) {
+    try {
+        const fullUrl = apiUrl(url);
+        console.log(`📡 API: ${options.method || 'GET'} ${fullUrl}`);
+        const response = await fetch(fullUrl, options);
+        let payload = null;
+        try { payload = await response.json(); } catch (_) {}
+        if (!response.ok) {
+            const detail = payload?.detail;
+            let message = typeof detail === "string" ? detail : 
+                          detail?.message || `${response.status} ${response.statusText}`;
+            throw new Error(message);
+        }
+        return payload;
+    } catch (error) {
+        console.error(`❌ Error en ${url}:`, error);
+        throw error;
+    }
+}
+
+function storageGet(key) { try { return window.localStorage.getItem(key); } catch (_) { return null; } }
+function storageSet(key, value) { try { window.localStorage.setItem(key, value); } catch (_) {} }
+function storageRemove(key) { try { window.localStorage.removeItem(key); } catch (_) {} }
+
+// ============================================================
+// RENDERIZADO
+// ============================================================
+
+function renderModelCards() {
+    const root = $("modelCards");
+    if (!state.catalog?.model_families) {
+        root.innerHTML = '<div class="empty-state">No models available. Check connection.</div>';
+        return;
+    }
+    root.innerHTML = "";
+    for (const model of state.catalog.model_families.filter(item => item.top_level !== false)) {
+        const button = document.createElement("button");
+        button.type = "button";
+        button.className = `model-card ${model.id === state.modelFamily ? "active" : ""}`;
+        button.dataset.model = model.id;
+        button.innerHTML = `<strong>${esc(model.label)}</strong><small>${esc(model.description)}</small><span class="support">${esc(model.support_status.replaceAll("_", " "))}</span>`;
+        button.addEventListener("click", () => selectModel(model.id));
+        root.appendChild(button);
+    }
+}
+
+function selectModel(id) {
+    state.modelFamily = id;
+    renderModelCards();
+    setHidden("fermionFields", id !== "fermion_pairing");
+    setHidden("oscillatorFields", id !== "oscillator");
+    setHidden("customFields", id !== "custom");
+    const model = modelById(id);
+    const review = model?.review ? ` Owner: ${model.review.model_owner}; scientific review: ${model.review.scientific_review_status}.` : "";
+    $("modelSupportNote").textContent = model?.description + review || "Select a model";
+    renderTaskOptions();
+    renderScientificCoreInspector();
+}
+
+function renderTaskOptions() {
+    const select = $("taskId");
+    if (!select) return;
+    const options = [
+        { id: "ground_state_energy", label: "Ground-state energy" },
+        { id: "mapping_analysis", label: "Mapping analysis" },
+        { id: "observable_estimation", label: "Observable estimation" }
+    ];
+    select.innerHTML = options.map(item => 
+        `<option value="${esc(item.id)}" ${item.id === state.taskId ? "selected" : ""}>${esc(item.label)}</option>`
+    ).join("");
+    $("taskSupportNote").textContent = "Choose a runnable model × task cell.";
+}
+
+function renderScientificCoreInspector() {
+    const root = $("scientificCoreInspector");
+    if (!state.catalog?.scientific_core?.models) {
+        root.innerHTML = '<div class="empty-state">Scientific core data not available.</div>';
+        return;
+    }
+    const modelId = state.modelFamily;
+    const view = state.catalog.scientific_core.models.find(item => item.model_id === modelId);
+    if (!view) {
+        root.innerHTML = `<div class="empty-state">Scientific core unavailable for ${esc(modelId)}.</div>`;
+        return;
+    }
+    const core = view.scientific_core?.model_contract || {};
+    const rows = [
+        ["Physical phenomenon", core.physical_phenomenon?.value],
+        ["Degrees of freedom", core.degrees_of_freedom?.value],
+        ["Representation", core.representation?.value],
+        ["Hamiltonian components", core.hamiltonian_components?.value],
+        ["Sector / symmetries", core.sector_symmetries?.value],
+        ["Encoding / mapping", core.encoding_mapping?.value],
+        ["Supported realizations", core.supported_realizations?.value]
+    ];
+    root.innerHTML = `
+        <div class="semantic-boundary-note"><strong>${esc(view.user_view?.group_label || "Model")}</strong> scientific core.</div>
+        <div class="scientific-core-grid">${rows.map(([label, item]) => 
+            `<div><span>${esc(label)}</span><strong>${esc(list(item))}</strong></div>`
+        ).join("")}</div>
+    `;
+}
+
+// ============================================================
+// EJECUCIÓN
+// ============================================================
+
+async function submitRun(event) {
+    event.preventDefault();
+    const errorBox = $("formError");
+    errorBox.classList.add("hidden");
+    
+    try {
+        const request = {
+            method: state.modelFamily,
+            task_id: state.taskId,
+            target_backend: value("targetBackend"),
+            execution_mode: "local_simulator",
+            run_mode: value("runMode"),
+            shots: intValue("shots"),
+            max_evaluations: intValue("maxEvaluations"),
+            energy_tolerance: floatValue("energyTolerance"),
+            acceptance_abs_floor: floatValue("acceptanceFloor"),
+            seed: intValue("seed"),
+            interface_mode: "guided_no_code"
+        };
+        
+        const created = await apiJson("/runs", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(request),
+        });
+        
+        state.runId = created.run_id;
+        state.snapshot = created;
+        $("cancelButton").disabled = false;
+        storageSet("qcol_last_run_id", state.runId);
+        renderSnapshot();
+        refreshRunHistory();
+        
+    } catch (error) {
+        errorBox.textContent = String(error.message || error);
+        errorBox.classList.remove("hidden");
+    }
+}
+
+async function cancelRun() {
+    if (!state.runId) return;
+    try {
+        const snapshot = await apiJson(`/runs/${encodeURIComponent(state.runId)}/cancel`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ reason: "user_requested" }),
+        });
+        state.snapshot = snapshot;
+        renderSnapshot();
+    } catch (error) {
+        console.error("Error canceling run:", error);
+    }
+}
+
+function renderSnapshot() {
+    const snapshot = state.snapshot || {};
+    const result = snapshot.result || null;
+    const status = snapshot.status || "waiting";
+    
+    const badge = $("compactRunStatus");
+    badge.textContent = result?.status || status;
+    badge.className = `status-badge ${status}`;
+    
+    $("compactRunId").textContent = snapshot.run_id || "—";
+    $("compactModel").textContent = snapshot.request?.method || "—";
+    $("compactTask").textContent = snapshot.request?.task_id || "—";
+    $("runIdLabel").textContent = snapshot.run_id ? `run_id: ${snapshot.run_id}` : "No active run";
+    
+    const lifecycle = $("lifecycleBadge");
+    lifecycle.textContent = status;
+    lifecycle.className = `status-badge ${status}`;
+    
+    if (result) {
+        const unit = result.meaning?.unit || "";
+        $("compactPrimaryValue").textContent = result.reconstructed_energy !== undefined ? 
+            `${number(result.reconstructed_energy, 9)} ${unit}` : "—";
+        $("compactReference").textContent = result.verification?.reference_energy !== undefined ?
+            `${number(result.verification.reference_energy, 9)} ${unit}` : "unavailable";
+        $("compactError").textContent = result.verification?.absolute_error !== undefined ?
+            `${number(result.verification.absolute_error, 6)} ${unit}` : result.status;
+            
+        $("resultEnergy").textContent = result.reconstructed_energy !== undefined ?
+            `${number(result.reconstructed_energy, 9)} ${unit}` : "—";
+        $("resultReference").textContent = result.verification?.reference_energy !== undefined ?
+            `${number(result.verification.reference_energy, 9)} ${unit}` : "unavailable";
+        $("resultError").textContent = result.verification?.absolute_error !== undefined ?
+            `${number(result.verification.absolute_error, 6)} ${unit}` : "—";
+        $("resultThreshold").textContent = result.verification?.acceptance_threshold !== undefined ?
+            `${number(result.verification.acceptance_threshold, 6)} ${unit}` : "—";
+        
+        $("latestEnergy").textContent = `${number(result.reconstructed_energy, 8)} ${unit}`;
+        $("bestEnergy").textContent = `${number(result.reconstructed_energy, 8)} ${unit}`;
+        $("referenceEnergy").textContent = result.verification?.reference_energy !== undefined ?
+            `${number(result.verification.reference_energy, 8)} ${unit}` : "—";
+        $("eventCount").textContent = result.payload_summary?.journey_event_count || 0;
+        
+        $("physicalStatement").textContent = result.meaning?.supported_statement || 
+            "A physical statement will appear after reconstruction and verification.";
+        const limits = result.meaning?.limitations || [];
+        $("limitationList").innerHTML = limits.length ? 
+            limits.map(item => `<li>${esc(item)}</li>`).join("") : 
+            "<li>No final limitation list is available yet.</li>";
+            
+        $("executionLabel").textContent = `Execution: ${(result.execution_mode || "local_simulator").replaceAll("_", " ")}`;
+        $("backendLabel").textContent = `provider target: ${(result.target_backend || snapshot.request?.target_backend || "—").toUpperCase()}`;
+        
+        const history = result.convergence_history || [];
+        if (history.length) {
+            const values = history.map(item => Number(item.energy)).filter(Number.isFinite);
+            const min = Math.min(...values), max = Math.max(...values);
+            const span = Math.max(1e-12, max - min);
+            const bars = history.map((item, index) => {
+                const energy = Number(item.energy);
+                const height = Number.isFinite(energy) ? 18 + ((max - energy) / span) * 88 : 10;
+                const evaluation = item.evaluation ?? item.iteration ?? index + 1;
+                return `<div class="chart-bar" style="height:${height}px" data-tip="eval ${esc(evaluation)} · E=${esc(number(energy,8))}"></div>`;
+            }).join("");
+            $("energyHistory").innerHTML = `<div class="chart-bars">${bars}</div>`;
+        } else {
+            $("energyHistory").innerHTML = `<div class="empty-state">Energy evaluations will appear here.</div>`;
+        }
+    }
+}
+
+async function refreshRunHistory() {
+    try {
+        const payload = await apiJson("/runs");
+        const select = $("runHistorySelect");
+        select.innerHTML = `<option value="">${payload.count ? "Choose a run" : "No saved runs"}</option>` + 
+            (payload.runs || []).map(run => 
+                `<option value="${esc(run.run_id)}">${esc(run.run_id)} · ${esc(run.status)}</option>`
+            ).join("");
+    } catch (_) {}
+}
+
+async function loadRun() {
+    const runId = value("runHistorySelect");
+    if (!runId) return;
+    try {
+        const snapshot = await apiJson(`/runs/${encodeURIComponent(runId)}`);
+        state.runId = runId;
+        state.snapshot = snapshot;
+        storageSet("qcol_last_run_id", runId);
+        renderSnapshot();
+    } catch (error) {
+        console.error("Error loading run:", error);
+    }
+}
+
+function resetDashboard() {
+    state.runId = null;
+    state.snapshot = null;
+    storageRemove("qcol_last_run_id");
+    $("cancelButton").disabled = true;
+    renderSnapshot();
+    $("formError").classList.add("hidden");
+    $("formError").textContent = "";
+}
+
+async function checkHealth() {
+    try {
+        const health = await apiJson("/health");
+        const badge = $("apiHealth");
+        badge.textContent = `QCOL active · ${health.active_run_count || 0} active`;
+        badge.className = "health-badge ok";
+        return true;
+    } catch (error) {
+        const badge = $("apiHealth");
+        badge.textContent = "API unavailable";
+        badge.className = "health-badge error";
+        return false;
+    }
+}
+
+// ============================================================
+// INICIALIZACIÓN
+// ============================================================
+
+async function bootstrap() {
+    try {
+        console.log('🔧 Inicializando QCOL...');
+        
+        const connected = await checkHealth();
+        if (!connected) {
+            console.warn("⚠️ API not available. Using default catalog.");
+        }
+        
+        try {
+            state.catalog = await apiJson("/catalog");
+            console.log('✅ Catálogo cargado desde el backend');
+        } catch (e) {
+            console.warn('⚠️ Usando catálogo por defecto');
+            state.catalog = {
+                model_families: [
+                    { id: "fermion_pairing", label: "Fermionic Pairing", description: "Reduced pairing model for nuclear physics", support_status: "verified", top_level: true },
+                    { id: "oscillator", label: "Quantum Harmonic Oscillator", description: "QHO models for nuclear structure", support_status: "experimental", top_level: true },
+                    { id: "custom", label: "Custom Hamiltonian", description: "Define your own Hamiltonian", support_status: "experimental", top_level: true }
+                ],
+                scientific_core: {
+                    models: [
+                        {
+                            model_id: "fermion_pairing",
+                            user_view: { group_label: "Fermionic Pairing" },
+                            scientific_core: {
+                                model_contract: {
+                                    physical_phenomenon: { value: "Nuclear pairing correlations" },
+                                    degrees_of_freedom: { value: "Single-particle levels" },
+                                    representation: { value: "Second quantization" },
+                                    encoding_mapping: { value: "Jordan-Wigner" }
+                                }
+                            }
+                        }
+                    ]
+                }
+            };
+        }
+        
+        renderModelCards();
+        renderTaskOptions();
+        selectModel(state.modelFamily);
+        renderScientificCoreInspector();
+        
+        const previous = storageGet("qcol_last_run_id");
+        if (previous) {
+            try {
+                const snapshot = await apiJson(`/runs/${encodeURIComponent(previous)}`);
+                state.runId = previous;
+                state.snapshot = snapshot;
+                renderSnapshot();
+            } catch (_) {
+                storageRemove("qcol_last_run_id");
+            }
+        }
+        
+        await refreshRunHistory();
+        await checkHealth();
+        
+        console.log("✅ QCOL inicializado correctamente");
+        console.log("📚 Modelos cargados:", state.catalog.model_families?.length || 0);
+        
+    } catch (error) {
+        console.error("❌ Error en bootstrap:", error);
+        const errorBox = $("formError");
+        errorBox.textContent = `Error initializing: ${error.message}`;
+        errorBox.classList.remove("hidden");
+    }
+}
+
+// ============================================================
+// EVENTOS
+// ============================================================
+
+document.addEventListener("DOMContentLoaded", () => {
+    console.log('📄 DOM cargado, iniciando QCOL...');
+    bootstrap();
+});
+
+$("runForm").addEventListener("submit", submitRun);
+$("cancelButton").addEventListener("click", cancelRun);
+$("newRunButton").addEventListener("click", resetDashboard);
+$("refreshRunsButton").addEventListener("click", refreshRunHistory);
+$("loadRunButton").addEventListener("click", loadRun);
+
+window.addEventListener("beforeunload", () => {
+    if (state.eventSource) state.eventSource.close();
+});
+
+console.log("🚀 QCOL cargado");
+console.log("📡 API Base:", API_BASE);
+</script>
+</body>
+</html>
