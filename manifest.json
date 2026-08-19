@@ -1,0 +1,9 @@
+{
+  "app_id": "nuclear-physics",
+  "repo": "laffitacamargof-create/nuclear-physics",
+  "ref": "main",
+  "mode": "mount_app",
+  "entry_module": "qcol-app-studio-backend/main.py",
+  "entry_attr": "app",
+  "version": "1.0.0"
+}
