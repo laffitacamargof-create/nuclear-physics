@@ -95,7 +95,7 @@ Example: https://xxxx.ngrok-free.app
 // -> previously saved value in this browser -> window.QCOL_API_BASE ->
 // the hardcoded fallback below. Set the fallback to the connector's
 // Render URL once deployed, e.g. https://qcol-quantum-app-studio-connector.onrender.com
-const FALLBACK_API_BASE = "https://YOUR-RENDER-ENDPOINT.onrender.com";
+const FALLBACK_API_BASE = "https://qcol-quantum-app-studio-connector.onrender.com";
 const _urlApiBase = new URLSearchParams(location.search).get("api");
 if (_urlApiBase) localStorage.setItem("qcol_api_base", _urlApiBase);
 const API_BASE = _urlApiBase || localStorage.getItem("qcol_api_base") || window.QCOL_API_BASE || FALLBACK_API_BASE;
