@@ -1,0 +1,27 @@
+# Render Blueprint. Connect this repository at https://dashboard.render.com/
+# and Render reads this file automatically -- no manual service
+# configuration needed beyond authorizing the GitHub repo.
+#
+# Free tier notes (accurate as of this writing; verify current terms at
+# render.com before relying on them):
+#   - Render's free web services spin down after ~15 minutes of no traffic
+#     and cold-start on the next request. The accompanying GitHub Actions
+#     workflow (.github/workflows/keepalive.yml) pings /health every 10
+#     minutes to prevent that, at zero cost, using GitHub's own scheduler.
+#   - Free tier has a monthly hour allowance; one continuously-pinged
+#     service comfortably fits within it.
+
+services:
+  - type: web
+    name: qcol-quantum-app-studio-connector
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    plan: free
+    healthCheckPath: /health
+    envVars:
+      - key: QCOL_GITHUB_OWNER
+        value: laffitacamargof-create
+      - key: QCOL_GITHUB_REPO
+        value: nuclear-physics
+      - key: QCOL_GITHUB_REF
+        value: main

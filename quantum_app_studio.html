@@ -1,0 +1,181 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>QCOL · Quantum App Studio</title>
+<style>
+:root{--bg:#0b1018;--panel:#121a25;--line:#263448;--ink:#e7edf5;
+--muted:#94a3b8;--teal:#36d6ae;--blue:#5ea8ff;--red:#ff7d78;--green:#4bd58b}
+*{box-sizing:border-box}body{margin:0;background:radial-gradient(circle at top,#111b2a,#0b1018 48%);
+color:var(--ink);font-family:system-ui,sans-serif;min-height:100vh}
+.top{padding:18px 24px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;
+align-items:center;background:#080d15ee}.top h1{margin:0;font-size:20px}.sub{color:var(--teal);font-size:12px;margin-top:4px}
+.badge{border:1px solid var(--line);border-radius:999px;padding:6px 10px;font-size:10px;font-weight:800}
+.ok{color:var(--green);border-color:#245d41}.wait{color:#f2c75c}.bad{color:var(--red);border-color:#743b3a}
+.wrap{max-width:1450px;margin:auto;padding:18px}.grid{display:grid;grid-template-columns:330px 1fr 330px;gap:12px}
+.panel{background:linear-gradient(180deg,#131b27,#0e1620);border:1px solid var(--line);border-radius:14px;padding:15px}
+h2{font-size:14px;margin:0 0 12px}label{display:grid;gap:5px;font-size:11px;color:#c7d1de;margin:10px 0}
+select,input,textarea{width:100%;background:#0b131e;color:var(--ink);border:1px solid #33445c;border-radius:8px;padding:9px;min-height:36px}
+textarea{min-height:90px;font-family:monospace}button{border:1px solid var(--line);background:#172234;color:var(--ink);
+border-radius:8px;padding:10px 13px;cursor:pointer}.primary{width:100%;background:#188d7a;border-color:#2ca990;font-weight:750}
+button:disabled{opacity:.45;cursor:not-allowed}.status{margin:10px 0;padding:9px;border-radius:8px;background:#0c141e;
+border:1px solid var(--line);font-size:11px;white-space:pre-wrap}.log{background:#070b11;border:1px solid #202b3c;
+border-radius:10px;padding:12px;min-height:380px;max-height:620px;overflow:auto;font:11px/1.5 monospace;white-space:pre-wrap}
+.card{border:1px solid var(--line);background:#0d1520;border-radius:10px;padding:10px;margin:8px 0}
+.muted{color:var(--muted);font-size:10px;line-height:1.45}.success{color:var(--green)}.danger{color:var(--red)}
+.hidden{display:none!important}.artifact{white-space:pre-wrap;max-height:250px;overflow:auto;font:10px monospace;background:#070b11;padding:8px}
+@media(max-width:1050px){.grid{grid-template-columns:1fr}.top{position:static}}
+</style>
+</head>
+<body>
+<header class="top">
+ <div><h1>⚛ Quantum App Studio</h1><div class="sub">QCOL · QIntern Project 21</div></div>
+ <div id="health" class="badge wait">CONNECTING</div>
+</header>
+
+<main class="wrap"><div class="grid">
+<section class="panel">
+<h2>1 · Problem</h2>
+<label>Problem family
+<select id="family"><option>Loading catalog…</option></select></label>
+<label>Problem / model
+<select id="model" disabled><option>Select a family first</option></select></label>
+<div id="modelInfo" class="status">Select a problem.</div>
+<label>Run mode
+<select id="runMode">
+<option value="single_evaluation">Single validated θ evaluation</option>
+<option value="vqe">External VQE loop (COBYLA)</option>
+</select></label>
+<label>Shots<input id="shots" type="number" min="1" value="1024"></label>
+<label>Backend
+<select id="backend">
+<option value="local_simulator">LocalAer / local simulator</option>
+<option value="ibm">IBM Quantum — target only</option>
+<option value="google">Google Quantum — target only</option>
+<option value="aws">AWS Braket — target only</option>
+</select></label>
+<div id="credentials" class="hidden">
+<label>Provider API key<input id="apiKey" type="password" autocomplete="off"></label>
+<div class="muted">Do not commit credentials. Remote adapters remain target-only.</div>
+</div>
+<label>Additional parameters (JSON)<textarea id="parameters">{}</textarea></label>
+<button id="execute" class="primary" disabled>Execute</button>
+<div id="error" class="status hidden"></div>
+</section>
+
+<section class="panel">
+<h2>2 · Execution Journey</h2>
+<div id="runStatus" class="status">No run started.</div>
+<div id="log" class="log">// Events will appear here.</div>
+<div class="card"><strong>Artifacts</strong><div id="artifacts" class="muted">Waiting.</div></div>
+<div class="card"><strong>Verification</strong><div id="verification" class="muted">Waiting.</div></div>
+</section>
+
+<section class="panel">
+<h2>3 · Connector</h2>
+<div id="connection" class="status">Checking…</div>
+<div class="card"><strong>Repository</strong><div id="repo" class="muted">Not loaded.</div></div>
+<div class="card"><strong>Pipeline</strong><div class="muted">
+Interface → model/task contract → canonical QCOL pipeline → OpenFermion/Cirq →
+QASM2/PyQASM → ExecutionAdapter → LocalAer → evidence/verification.
+</div></div>
+<div class="card"><strong>Attribution</strong><div class="muted">
+Work: QIntern Project 21. Backend source: laffitacamargof-create/nuclear-physics.
+</div></div>
+</section>
+</div></main>
+
+<script>
+/*
+Set this to the public FastAPI URL exposed by Colab.
+Example: https://xxxx.ngrok-free.app
+*/
+// Resolution order: ?api= query param (also persists it for next visit)
+// -> previously saved value in this browser -> window.QCOL_API_BASE ->
+// the hardcoded fallback below. Set the fallback to the connector's
+// Render URL once deployed, e.g. https://qcol-quantum-app-studio-connector.onrender.com
+const FALLBACK_API_BASE = "https://YOUR-RENDER-ENDPOINT.onrender.com";
+const _urlApiBase = new URLSearchParams(location.search).get("api");
+if (_urlApiBase) localStorage.setItem("qcol_api_base", _urlApiBase);
+const API_BASE = _urlApiBase || localStorage.getItem("qcol_api_base") || window.QCOL_API_BASE || FALLBACK_API_BASE;
+let catalog=null, family=null, model=null, runId=null, es=null;
+
+const $=id=>document.getElementById(id);
+function log(s,cls=""){const d=document.createElement("div");d.textContent=s;
+if(cls)d.className=cls;$("log").appendChild(d);$("log").scrollTop=$("log").scrollHeight}
+function err(s){$("error").textContent=s;$("error").classList.remove("hidden")}
+function clearErr(){$("error").classList.add("hidden")}
+
+async function health(){
+ try{const r=await fetch(API_BASE+"/health");if(!r.ok)throw Error("HTTP "+r.status);
+ const d=await r.json();$("health").textContent="CONNECTED";$("health").className="badge ok";
+ $("connection").textContent=`Connector online\nRepository: ${d.repository}\nCanonical QCOL: ${d.canonical_qcol_available?"available":"unavailable"}`;
+ }catch(e){$("health").textContent="OFFLINE";$("health").className="badge bad";
+ $("connection").textContent="Connector unavailable\n"+e.message;err("Set API_BASE to the public Colab connector URL.");}
+}
+async function repo(){try{const d=await (await fetch(API_BASE+"/github/repository")).json();
+$("repo").textContent=`${d.full_name}\nbranch: ${d.commit_ref}\n${d.html_url}`;}catch{}}
+
+function families(){return (catalog.model_families||[]).filter(x=>x.top_level!==false)}
+function models(f){return f?(f.problems||f.models||[]):[]}
+function loadFamilies(){
+ const s=$("family");s.innerHTML='<option value="">Select a problem family</option>';
+ families().forEach(f=>{const o=document.createElement("option");o.value=f.id;o.textContent=f.label||f.id;s.appendChild(o)});
+}
+function loadModels(){
+ family=families().find(f=>f.id===$("family").value)||null;
+ const ms=models(family);const s=$("model");s.innerHTML='<option value="">Select a model</option>';s.disabled=!ms.length;
+ ms.forEach(x=>{const o=document.createElement("option");o.value=x.model_id||x.id;o.textContent=x.label||x.model_id||x.id;s.appendChild(o)});
+ model=null;$("execute").disabled=true;$("modelInfo").textContent=ms.length?"Choose a model.":"No selectable models in this contract.";
+}
+function chooseModel(){
+ model=models(family).find(x=>(x.model_id||x.id)===$("model").value)||null;
+ $("execute").disabled=!model;
+ if(model)$("modelInfo").textContent=`${model.label||model.model_id||model.id}\nStatus: ${model.execution_status||model.status||"declared"}`;
+}
+async function loadCatalog(){
+ try{const r=await fetch(API_BASE+"/catalog",{cache:"no-store"});if(!r.ok)throw Error("HTTP "+r.status);
+ catalog=await r.json();if(!families().length)throw Error("No selectable model families.");
+ loadFamilies();log("✓ Catalog loaded","success");
+ }catch(e){$("family").innerHTML='<option>Catalog unavailable</option>';err("Catalog loading failed: "+e.message);log("✗ "+e.message,"danger")}
+}
+async function execute(){
+ clearErr();
+ if(!family||!model)return err("Select a problem family and model.");
+ if($("backend").value!=="local_simulator")return err("Remote backends are target-only in the current frozen baseline.");
+ let parameters;try{parameters=JSON.parse($("parameters").value||"{}")}catch(e){return err("Parameters JSON invalid: "+e.message)}
+ const payload={model_id:model.model_id||model.id,model:model.model_id||model.id,
+ task_id:$("runMode").value,run_mode:$("runMode").value,backend:$("backend").value,
+ shots:Number($("shots").value),parameters,problem_family:family.id};
+ $("execute").disabled=true;$("log").textContent="";log("Submitting run…");
+ try{const r=await fetch(API_BASE+"/runs",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(payload)});
+ const d=await r.json();if(!r.ok)throw Error(typeof d.detail==="string"?d.detail:JSON.stringify(d.detail||d));
+ runId=d.run_id;$("runStatus").textContent=`Run ${runId}\nStatus: ${d.status}`;log("✓ Run created: "+runId,"success");stream();
+ }catch(e){$("execute").disabled=false;err(e.message);log("✗ "+e.message,"danger")}
+}
+function stream(){
+ if(es)es.close();es=new EventSource(API_BASE+"/runs/"+encodeURIComponent(runId)+"/stream");
+ es.onopen=()=>log("✓ SSE connected","success");es.onerror=()=>log("SSE connection closed/changed.");
+ es.onmessage=e=>event("message",e);
+ ["created","queued","running","started","model_resolved","translation_started","qasm2_generated",
+ "pyqasm_validated","execution_started","execution_complete","energy_evaluated",
+ "verification_complete","completed","failed","cancelled"].forEach(t=>es.addEventListener(t,e=>event(t,e)));
+}
+function event(type,e){
+ let d={};try{d=JSON.parse(e.data)}catch{}
+ log(`• ${type}: ${d.message||d.detail||type}`);
+ $("runStatus").textContent=`Run ${runId}\nStatus: ${d.status||type}`;
+ if(type.includes("qasm"))$("artifacts").innerHTML='<span class="success">QASM2 event received.</span><pre class="artifact">'+safe(d)+'</pre>';
+ if(type==="verification_complete"||type==="completed")$("verification").innerHTML='<span class="success">Verification event received.</span><pre class="artifact">'+safe(d)+'</pre>';
+ if(["completed","failed","cancelled"].includes(type)){ $("execute").disabled=false;if(es)es.close(); }
+}
+function safe(x){return JSON.stringify(x,null,2).replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;")}
+
+$("family").addEventListener("change",loadModels);$("model").addEventListener("change",chooseModel);
+$("backend").addEventListener("change",()=>{$("credentials").classList.toggle("hidden",$("backend").value==="local_simulator")});
+$("execute").addEventListener("click",execute);
+(async()=>{await health();await repo();await loadCatalog()})();
+</script>
+</body>
+</html>
