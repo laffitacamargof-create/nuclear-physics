@@ -1,0 +1,22 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Quantum app nuclear physics</title><style>body{margin:0;background:#0b1018;color:#e7edf5;font:14px system-ui,sans-serif}#boot{padding:30px;text-align:center;color:#9aa8b9}button{cursor:pointer}</style></head><body><div id="boot">Quantum app nuclear physics · loading…</div><script>(()=>{"use strict";
+const BASE="https://raw.githubusercontent.com/laffitacamargof-create/nuclear-physics/0000000000000000000000000000000000000000/microfrontend/full/",H={"style.css":"57deaa92d9220a63b3387573c601d7e195c1a396f8b6cdb25ec92ef502447766","markup.html":"e0e36eb46f7a71335d95cf3d9ebb1ad61e3805a655ab07143cf9f2785dda3014","catalog.json":"afd2d5938907707e2f8b96f64f0f5c7dc3a42ca6386041804f1def4c43202fb0","realizations.json":"20a22801fed54bac505eca00a69891e8f4147c85d83526f4460cc2cb3dd8d25b","nuclear_connector.py":"b74bdf7ef0ffb6a4d5e2182380c6a4cea2f5addf1d55f3107c718cbe3a6f502f","core.js":"63300a61560fd0de5cd71e111109b5c85a34bf4fc684c573238ec446ad62a444","forms.js":"97c3bda70e22816135cb9061ea6da6512e7494bf9e7378f605c80732ae05c914","matrix.js":"6101d451a661adf0fd8a46ee6c47cf52a4263f3ae7d3a662a1f12240d9d3af89","run.js":"d981c63133399ef6845b9ed64c0c93363a3fc67aeed70c6a7c6da42c1e668e37","journey.js":"21dbf87e85ee230310eefa660e234b16e370cb8f6c56c4e6cce720d5980c7e40","advisor.js":"ea3d62da91e341ef0d3f4db9f3fed38a39207f4ca8bad4d2d3b69e5888fdef72","snapshot.js":"0373bdecaead6fa43d4f11f42b4a0aa40e1610e9810f2a8781283b45ca9b58d0","boot.js":"ed63886c9990d072ccf6c83f17443f1eea9205a58b1d9876defcdf5036cafd32","transport.js":"923657748199dba6769b28a34144e0ed0bb2f668d1c7ee0d522f988f3225c750","finalcode.js":"907d879096f6481be512628fbb1e2e596698a8190e2dd92543fe302101c6259b"},
+ORDER=["core","forms","matrix","run","journey","advisor","snapshot","transport","finalcode","boot"],
+sleep=e=>new Promise(t=>setTimeout(t,e)),el=e=>document.getElementById(e);
+async function sha(b){if(!(window.crypto&&crypto.subtle))return null;return[...new Uint8Array(await crypto.subtle.digest("SHA-256",b))].map(x=>x.toString(16).padStart(2,"0")).join("")}
+async function getSrc(f){const k="qnp2:"+H[f];try{const c=localStorage.getItem(k);if(c)return c}catch(e){}
+ const r=await fetch(BASE+f);if(!r.ok)throw new Error("HTTP "+r.status+" "+f);const b=await r.arrayBuffer(),g=await sha(b);if(g&&g!==H[f])throw new Error("Integrity check failed: "+f);const t=new TextDecoder().decode(b);try{localStorage.setItem(k,t)}catch(e){}return t}
+async function py(fn,...a){if("function"!=typeof window.pyCall)throw new Error("Open this app from the Quantum Puzzle or Quantum App Studio.");let n,f=fn;
+ for(let i=0;i<4;i++)try{return await window.pyCall(f,...a)}catch(e){n=e;const m=String(e&&e.message||e);
+  if(/is not defined/.test(m)&&f===fn){f="(exec("+JSON.stringify(await getSrc("nuclear_connector.py"))+",globals()) or "+fn+")";continue}
+  if(!/timeout|timed out|fetch|network|HTTP 5/i.test(m))throw e;await sleep(2e3)}throw n}
+window.QNP={py,getSrc,sleep};
+function run(src){const s=document.createElement("script");s.textContent=src;document.head.appendChild(s)}
+async function boot(){const st=el("boot");try{
+  const [css,html,...js]=await Promise.all([getSrc("style.css"),getSrc("markup.html"),...ORDER.map(n=>getSrc(n+".js"))]);
+  const s=document.createElement("style");s.textContent=css;document.head.appendChild(s);
+  document.body.insertAdjacentHTML("afterbegin",html);st.remove();js.forEach(run);warm()}
+ catch(e){st.innerHTML="⚠ Could not load the interface ("+String(e.message).replace(/</g,"&lt;")+') <button id="rl">Retry</button>';el("rl").onclick=boot}}
+async function warm(){const ok=(t,k)=>window.setApiHealth&&setApiHealth(t,k);
+ if("function"!=typeof window.pyCall){ok("Open from the Puzzle","waiting");return}
+ try{const r=await py("nuclear_warmup");r&&r.success?ok("Engine ready","ok"):ok("Engine: "+String(r&&r.error||"error").slice(0,70),"waiting")}catch(e){ok("Engine loads on first run","waiting")}}
+window.addEventListener("load",boot)})();</script></body></html>

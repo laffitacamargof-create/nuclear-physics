@@ -18,8 +18,8 @@ BACKEND_REPO = "laffitacamargof-create/nuclear-physics"
 BACKEND_COMMIT = "c173be521c786507c16d678498640cb03e6679c6"
 BACKEND_PATH = ""          # optional: local path of .../qcol-app-studio-backend
 NEEDED = ("numpy", "scipy", "cirq", "openfermion", "pyqasm")
-DEADLINE = 27.0            # the compiler allows ~35 s per call
-_M = {}
+DEADLINE = 30.0            # the compiler allows ~35 s per call
+_M = sys.modules.setdefault("_qnp_state", type(sys)("_qnp_state")).__dict__   # survives between calls if the compiler keeps its process
 
 
 def _backend_dir():
@@ -47,13 +47,17 @@ def _ensure():
         sys.path.insert(0, p)
 
 
-def nuclear_warmup():
+def nuclear_warmup(deep=True):
     t0 = time.time()
     try:
         with redirect_stdout(io.StringIO()), redirect_stderr(io.StringIO()):
             warnings.filterwarnings("ignore")
             _ensure()
             import qcol.run_manager, qcol.catalog, qcol.orchestrator  # noqa
+            if deep:
+                _route("POST", "/runs", {"model_id": "nuclear.reduced_pairing.one_pair", "task": "ground_state_energy",
+                       "shots": 64, "seed": 1, "max_evaluations": 4, "target_backend": "google",
+                       "parameters": {"n_levels": 4, "epsilon": [0, 1, 2, 3], "g": 0.5}}, {}, t0)
         return {"success": True, "seconds": round(time.time() - t0, 1)}
     except Exception as e:
         return {"success": False, "error": str(e)[:400]}
@@ -95,6 +99,7 @@ def _wait(rec, limit):
     while not rec.terminal:
         if time.time() - t0 > limit and rec.public_result is None:
             rec.cancellation_token.cancel("compiler_time_limit")
+            _M["tl"] = rec.run_id
             limit = 1e9
         time.sleep(0.05)
     while rec.status not in ("completed", "cancelled", "failed"):
@@ -131,7 +136,7 @@ def _pack(rec, mgr, secs):
     d = {"run_id": rec.run_id, "events": _compact(rec), "snapshot": snap,
          "evidence_b64": _b64(rec.evidence_archive),
          "technical_error": (mgr.technical_error_info(rec.run_id) if rec.technical_error else None),
-         "export": _export(rec), "seconds": secs}
+         "export": _export(rec), "seconds": secs, "time_limited": _M.get("tl") == rec.run_id}
     try:
         p = Path(tempfile.gettempdir()) / "qnp_runs"
         p.mkdir(exist_ok=True)

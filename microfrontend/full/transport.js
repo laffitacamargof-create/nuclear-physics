@@ -21,7 +21,7 @@ async function pyq(method, path, body, ctx) {
 const rid = (a) => V.alias[a] || a;
 function blobUrl(b64) { return b64 ? URL.createObjectURL(new Blob([b64u8(b64)], { type: "application/zip" })) : null; }
 async function staticJson(name, fallbackPath) {
-  try { return JSON.parse(await QN.getSrc("full/" + name)); } catch (_) { return pyq("GET", fallbackPath); }
+  try { return JSON.parse(await QN.getSrc(name)); } catch (_) { return pyq("GET", fallbackPath); }
 }
 function remember(id, rec) {
   V.runs[id] = rec;
@@ -80,6 +80,7 @@ async function apiJson(url, options = {}) {
     pyq("POST", `/runs/${id}/try-compare`, body, ctx).then((d) => {
       const cid = d.run_id;
       remember(cid, { snapshot: clean(d.snapshot), technical: d.technical_error, exp: d.export, evUrl: blobUrl(d.evidence_b64) });
+      if (d.time_limited) showFormError("The compiler time limit (35 s) stopped the candidate run; the comparison is not conclusive. Try again.");
       const s = clean(d.session);
       V.alias[sid] = d.session_id;
       V.cmp[sid] = { snap: Object.assign({}, s, { evidence_url: s.evidence_available ? `/comparisons/${sid}/evidence` : null }), evUrl: blobUrl(d.comparison_evidence_b64) };
@@ -105,6 +106,10 @@ async function apiJson(url, options = {}) {
 }
 
 function closeStream() { V.abort = true; }
+const _renderSnapshot = renderSnapshot;
+const draw = () => { _renderSnapshot(); (QN.hooks || []).forEach((f) => { try { f(); } catch (_) {} }); };
+renderSnapshot = function () { if (V.replay) { V.dirty = true; return; } draw(); };
+window.QNP.V = V;
 function expandEvents(d) {
   const snap = clean(d.snapshot);
   let cards = {};
@@ -128,6 +133,7 @@ function connectStream() {
   const raw = state.runId;
   if (!raw) return;
   V.abort = false;
+  const jd = $("journeyDisclosure"); if (jd) jd.open = true;
   const p = V.pending[raw];
   if (!p) return;
   (async () => {
@@ -149,18 +155,21 @@ function connectStream() {
     storageSet("qcol_last_run_id", d.run_id);
     setApiHealth("live replay of the recorded run", "ok");
     const ms = (t) => (t ? Date.parse(t) : NaN);
-    const total = Math.min(14000, Math.max(3000, events.length * 35));
+    const total = Math.min(9000, Math.max(2500, events.length * 25));
     const t0 = ms(events.find((e) => e.ts) ? events.find((e) => e.ts).ts : null);
     const t1 = ms([...events].reverse().find((e) => e.ts) ? [...events].reverse().find((e) => e.ts).ts : null);
     let prevT = t0;
+    V.replay = true; let lastR = 0;
     for (const e of events) {
       if (V.abort) break;
       let w = total / events.length;
       if (e.ts && t1 > t0) { const cur = ms(e.ts); w = Math.max(6, ((cur - prevT) / (t1 - t0)) * total); prevT = cur; }
       handleSseEvent({ type: e.type, lastEventId: String(e.id), data: JSON.stringify(e.data) });
-      await QN.sleep(Math.min(w, 400));
+      if (performance.now() - lastR > 90) { V.replay = false; draw(); V.replay = true; lastR = performance.now(); await QN.sleep(Math.min(w, 200)); }
     }
+    V.replay = false; V.dirty = false; draw();
     if (V.abort) { state.snapshot = snap; renderSnapshot(); }
+    if (d.time_limited) showFormError("The compiler time limit (35 s) stopped this run before it converged. Use fewer evaluations or fewer shots, or run it again (the second attempt is usually faster).");
     setApiHealth(`engine ready · ${d.seconds}s`, "ok");
     refreshRunHistory();
   })();
