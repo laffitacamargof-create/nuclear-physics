@@ -1,10 +1,12 @@
 # Quantum app nuclear physics · micro-frontend
 
-Light **connector** (`index.html`, ~33 KB) + heavy parts loaded on demand from this repo.
+Light **connector** (`index.html`, ~10.7 KB) + heavy parts loaded on demand from this repo.
 
 | File | Role |
 |---|---|
-| `index.html` | Connector: model/level/pairing selectors, run controls, Build & Run, history, minimal fallback result. Calls `pyCall` and injects the backend result into the modules. |
+| `index.html` | Connector: page skeleton, module loader (pinned + SHA-256), Build & Run, history, minimal fallback result. Calls `pyCall` and injects the backend result into the modules. |
+| `modules/style.js` | Full stylesheet |
+| `modules/form.js` | Model registry (11 models), level/pairing selectors and parameter form |
 | `modules/flow.js` | 16-stage workflow (live + replay) |
 | `modules/result.js` | Full result view (verdict, metrics, variational-bound banner, details) |
 | `modules/chart.js` | Convergence chart + enlarge/zoom |
