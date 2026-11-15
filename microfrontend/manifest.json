@@ -1,0 +1,18 @@
+{
+ "schema": 1,
+ "files": {
+  "modules/codegen.js": "1b7a4ffef3193aaae03633687f3dd53e0d390e57c29c326e23feffe920aacb9f",
+  "modules/chart.js": "ca850ef2c64fa6cb6974bd6867a708d5413eecd8768b07896aba6f0d4949544c",
+  "modules/flow.js": "13e71e199114ca8e1e270b1c10db42588ea37f5c6b246fafe08ef05089008189",
+  "modules/capmap.js": "8baf04028addc2324a96ee9427a26d454e7d119685ed78b37304654894eac222",
+  "modules/result.js": "1500faf632003abbeb161dad8f8af0eeb29bc80974064351bb999c03bd4707be",
+  "nuclear_logic.py": "d9d370cd314aa6a2f8934622172ee13852a50c64125e968e74708b95d8c29899"
+ },
+ "deps": {
+  "result": [
+   "flow",
+   "chart",
+   "codegen"
+  ]
+ }
+}

@@ -1,0 +1,3 @@
+/* Quantum app nuclear physics · module "capmap" (micro-frontend). Loaded on demand by the connector. */
+(function(Q){"use strict";const {$,fmt,esc,sleep}=Q;const MODELS=Q.MODELS;function renderCap(){$("cap").innerHTML="<tr><th>Model</th>"+["Ground-state energy","Eigenphase estimation","Excited states","Fermion-to-qubit mapping explorer"].map(e=>"<th>"+e+"</th>").join("")+"</tr>"+MODELS.map(e=>"<tr><td>"+esc(e.label)+'</td><td class="ready">execution ready</td><td class="plan">planned</td><td class="plan">planned</td><td class="plan">—</td></tr>').join("")}
+return {renderCap};})
