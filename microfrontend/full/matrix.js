@@ -15,7 +15,7 @@ function renderScientificCoreInspector() {
   const core = view.scientific_core?.model_contract || {};
   const value = key => core[key]?.value;
   const format = item => {
-    if (Array.isArray(item)) return item.map(esc).join(", ");
+    if (Array.isArray(item)) return item.map(x => (x && typeof x === "object") ? "<code>" + esc(JSON.stringify(x)) + "</code>" : esc(x)).join(", ");
     if (item && typeof item === "object") return `<code>${esc(JSON.stringify(item))}</code>`;
     return esc(item ?? "—");
   };
