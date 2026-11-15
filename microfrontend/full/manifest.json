@@ -1,0 +1,19 @@
+{
+ "schema": 2,
+ "files": {
+  "style.css": "57deaa92d9220a63b3387573c601d7e195c1a396f8b6cdb25ec92ef502447766",
+  "markup.html": "e0e36eb46f7a71335d95cf3d9ebb1ad61e3805a655ab07143cf9f2785dda3014",
+  "catalog.json": "afd2d5938907707e2f8b96f64f0f5c7dc3a42ca6386041804f1def4c43202fb0",
+  "realizations.json": "20a22801fed54bac505eca00a69891e8f4147c85d83526f4460cc2cb3dd8d25b",
+  "nuclear_connector.py": "a52f6e94ece2c0794cef0040d10777ac37072222236e0951174ec44ee0265adc",
+  "core.js": "63300a61560fd0de5cd71e111109b5c85a34bf4fc684c573238ec446ad62a444",
+  "forms.js": "97c3bda70e22816135cb9061ea6da6512e7494bf9e7378f605c80732ae05c914",
+  "matrix.js": "6101d451a661adf0fd8a46ee6c47cf52a4263f3ae7d3a662a1f12240d9d3af89",
+  "run.js": "d981c63133399ef6845b9ed64c0c93363a3fc67aeed70c6a7c6da42c1e668e37",
+  "journey.js": "21dbf87e85ee230310eefa660e234b16e370cb8f6c56c4e6cce720d5980c7e40",
+  "advisor.js": "ea3d62da91e341ef0d3f4db9f3fed38a39207f4ca8bad4d2d3b69e5888fdef72",
+  "snapshot.js": "0373bdecaead6fa43d4f11f42b4a0aa40e1610e9810f2a8781283b45ca9b58d0",
+  "boot.js": "ed63886c9990d072ccf6c83f17443f1eea9205a58b1d9876defcdf5036cafd32",
+  "transport.js": "be610e9971441cea1e0b30255f1cc24d12ad876746c8bdcfa1c07c6b5c4eb299"
+ }
+}
