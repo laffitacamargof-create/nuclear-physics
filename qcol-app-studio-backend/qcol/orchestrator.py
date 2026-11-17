@@ -289,6 +289,35 @@ def _run_pipeline_impl(
         realization.verification_handler(realization, outcome)
     )
     check_cancel("after_task_verification")
+
+    # Independent safety gate at the orchestration boundary. A task-specific
+    # verifier or alternate UI path must never turn an energy below the declared
+    # ground-state reference into an accepted result.
+    if task_plan.task_contract.task_id == "ground_state_energy":
+        reference_energy = (
+            None if artifact.exact_reference is None
+            else float(artifact.exact_reference["reference_energy"])
+        )
+        reconstructed_energy = final_execution.get("energy")
+        if reference_energy is not None and reconstructed_energy is not None:
+            reconstructed_energy = float(reconstructed_energy)
+            if reconstructed_energy < reference_energy:
+                violation = reference_energy - reconstructed_energy
+                verification.update({
+                    "status": "REVIEW",
+                    "accepted": False,
+                    "energy_respects_minimum": False,
+                    "minimum_energy_bound": reference_energy,
+                    "reference_energy": reference_energy,
+                    "reconstructed_energy": reconstructed_energy,
+                    "minimum_energy_violation": violation,
+                    "rejection_reason": (
+                        "Rejected: reconstructed energy is below the declared "
+                        "ground-state minimum. Statistical uncertainty and optimizer "
+                        "convergence cannot override this physical bound."
+                    ),
+                })
+    verification_status = str(verification.get("status", "REVIEW"))
     verification_status = str(verification.get("status", "REVIEW"))
     emit(PipelineEvent(
         run_id=run_id,
