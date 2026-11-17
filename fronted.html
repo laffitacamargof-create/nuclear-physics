@@ -569,8 +569,10 @@ function renderSnapshot() {
     const status = snapshot.status || "waiting";
     
     const badge = $("compactRunStatus");
+    const scientificStatus = String(result?.status || status).toLowerCase();
     badge.textContent = result?.status || status;
-    badge.className = `status-badge ${status}`;
+    // The scientific verdict must not inherit the lifecycle's "completed" style.
+    badge.className = `status-badge ${scientificStatus}`;
     
     $("compactRunId").textContent = snapshot.run_id || "—";
     $("compactModel").textContent = snapshot.request?.method || "—";
@@ -587,8 +589,14 @@ function renderSnapshot() {
             `${number(result.reconstructed_energy, 9)} ${unit}` : "—";
         $("compactReference").textContent = result.verification?.reference_energy !== undefined ?
             `${number(result.verification.reference_energy, 9)} ${unit}` : "unavailable";
-        $("compactError").textContent = result.verification?.absolute_error !== undefined ?
+        const minimumViolation = Number(result.verification?.minimum_energy_violation);
+        const belowMinimum = result.verification?.energy_respects_minimum === false ||
+            (Number.isFinite(minimumViolation) && minimumViolation > 0);
+        const absoluteErrorText = result.verification?.absolute_error !== undefined ?
             `${number(result.verification.absolute_error, 6)} ${unit}` : result.status;
+        $("compactError").textContent = belowMinimum ?
+            `${absoluteErrorText} · BELOW MINIMUM BY ${number(minimumViolation, 9)} ${unit} · NOT ACCEPTED` :
+            absoluteErrorText;
             
         $("resultEnergy").textContent = result.reconstructed_energy !== undefined ?
             `${number(result.reconstructed_energy, 9)} ${unit}` : "—";
@@ -604,9 +612,11 @@ function renderSnapshot() {
         $("referenceEnergy").textContent = result.verification?.reference_energy !== undefined ?
             `${number(result.verification.reference_energy, 8)} ${unit}` : "—";
         $("eventCount").textContent = result.payload_summary?.journey_event_count || 0;
-        
-        $("physicalStatement").textContent = result.meaning?.supported_statement || 
+        const supportedStatement = result.meaning?.supported_statement ||
             "A physical statement will appear after reconstruction and verification.";
+        $("physicalStatement").textContent = belowMinimum ?
+            `REJECTED — reconstructed energy is below the declared minimum-energy reference. The numerical result remains visible above and is not scientifically accepted. ${supportedStatement}` :
+            supportedStatement;
         const limits = result.meaning?.limitations || [];
         $("limitationList").innerHTML = limits.length ? 
             limits.map(item => `<li>${esc(item)}</li>`).join("") : 
