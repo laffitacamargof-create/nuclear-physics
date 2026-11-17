@@ -552,11 +552,10 @@ def summary_markdown(artifact: ProblemArtifact, result: RunResult) -> str:
             f"**Required minimum:** {float(exact):.8f} {unit}  \\n"
         )
     else:
-        energy_summary = (
-            f"{energy_summary}"
-        )
+        energy_summary = ""
     return (
         f"## {result.status}\n\n"
+        f"{energy_summary}"
         f"**Task:** ground-state / sector-ground-state energy  \n"
         f"**Run mode:** {result.run_mode}  \n"
         f"**Controller:** {result.controller_id or result.optimizer_name or 'not invoked'}  \n"
