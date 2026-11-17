@@ -543,8 +543,19 @@ def summary_markdown(artifact: ProblemArtifact, result: RunResult) -> str:
     exact_text = "not available" if exact is None else f"{float(exact):.8f} {unit}"
     mapping_note = artifact.mapping or "not declared"
     convergence = "yes" if result.optimizer_converged else "no / not invoked"
+    minimum_violation = float(verification.get("minimum_energy_violation", 0.0) or 0.0)
+    if minimum_violation > 0.0:
+        energy_summary = (
+            "**REJECTED — energy below the declared minimum**  \\n"
+            f"**Observed energy (not accepted):** {float(result.reconstructed_energy):.8f} {unit}  \\n"
+            f"**Minimum-energy violation:** {minimum_violation:.8g} {unit}  \\n"
+            f"**Required minimum:** {float(exact):.8f} {unit}  \\n"
+        )
+    else:
+        energy_summary = ""
     return (
         f"## {result.status}\n\n"
+        f"{energy_summary}"
         f"**Task:** ground-state / sector-ground-state energy  \n"
         f"**Run mode:** {result.run_mode}  \n"
         f"**Controller:** {result.controller_id or result.optimizer_name or 'not invoked'}  \n"

@@ -635,7 +635,17 @@ def verify_reconstructed_result(
     reference_energy = float(reference["reference_energy"])
     reconstructed_energy = float(execution["energy"])
     standard_error = float(execution["standard_error"])
-    absolute_error = abs(reconstructed_energy - reference_energy)
+    finite_energy_values = (
+        math.isfinite(reference_energy)
+        and math.isfinite(reconstructed_energy)
+        and math.isfinite(standard_error)
+        and standard_error >= 0.0
+    )
+    absolute_error = (
+        abs(reconstructed_energy - reference_energy)
+        if finite_energy_values
+        else float("inf")
+    )
     floor = float(
         request.get(
             "acceptance_abs_floor",
@@ -648,16 +658,34 @@ def verify_reconstructed_result(
     # inside a symmetric error band.  Statistical uncertainty may widen the
     # upper acceptance window, but it must never authorize an energy below
     # the declared minimum-energy reference.
-    energy_respects_minimum = reconstructed_energy >= reference_energy
+    energy_respects_minimum = (
+        finite_energy_values and reconstructed_energy >= reference_energy
+    )
     structural_checks["energy_not_below_declared_minimum"] = energy_respects_minimum
+    minimum_energy_violation = (
+        max(0.0, reference_energy - reconstructed_energy)
+        if finite_energy_values
+        else None
+    )
+    below_minimum = finite_energy_values and reconstructed_energy < reference_energy
     accepted = (
-        all(structural_checks.values())
+        finite_energy_values
+        and all(structural_checks.values())
         and absolute_error <= threshold
         and energy_respects_minimum
     )
 
     return {
         "status": "PASS" if accepted else "REVIEW",
+        "rejection_reason": (
+            "RECONSTRUCTED_ENERGY_BELOW_DECLARED_MINIMUM"
+            if below_minimum
+            else (
+                "NON_FINITE_ENERGY_OR_UNCERTAINTY"
+                if not finite_energy_values
+                else None
+            )
+        ),
         "reference_policy": REFERENCE_POLICY,
         "structural_checks": structural_checks,
         "reference_kind": reference["kind"],
@@ -666,7 +694,7 @@ def verify_reconstructed_result(
         "minimum_energy_bound": reference_energy,
         "reconstructed_energy": reconstructed_energy,
         "energy_respects_minimum": energy_respects_minimum,
-        "minimum_energy_violation": max(0.0, reference_energy - reconstructed_energy),
+        "minimum_energy_violation": minimum_energy_violation,
         "standard_error": standard_error,
         "absolute_error": absolute_error,
         "acceptance_threshold": threshold,
