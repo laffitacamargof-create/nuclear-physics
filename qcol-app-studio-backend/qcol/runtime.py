@@ -643,7 +643,18 @@ def verify_reconstructed_result(
         )
     )
     threshold = max(3 * standard_error, floor)
-    accepted = all(structural_checks.values()) and absolute_error <= threshold
+
+    # A ground-state reference is a hard lower bound, not merely a target
+    # inside a symmetric error band.  Statistical uncertainty may widen the
+    # upper acceptance window, but it must never authorize an energy below
+    # the declared minimum-energy reference.
+    energy_respects_minimum = reconstructed_energy >= reference_energy
+    structural_checks["energy_not_below_declared_minimum"] = energy_respects_minimum
+    accepted = (
+        all(structural_checks.values())
+        and absolute_error <= threshold
+        and energy_respects_minimum
+    )
 
     return {
         "status": "PASS" if accepted else "REVIEW",
@@ -652,7 +663,10 @@ def verify_reconstructed_result(
         "reference_kind": reference["kind"],
         "reference_scope": reference["reference_scope"],
         "reference_energy": reference_energy,
+        "minimum_energy_bound": reference_energy,
         "reconstructed_energy": reconstructed_energy,
+        "energy_respects_minimum": energy_respects_minimum,
+        "minimum_energy_violation": max(0.0, reference_energy - reconstructed_energy),
         "standard_error": standard_error,
         "absolute_error": absolute_error,
         "acceptance_threshold": threshold,
