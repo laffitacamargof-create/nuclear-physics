@@ -318,7 +318,6 @@ def _run_pipeline_impl(
                     ),
                 })
     verification_status = str(verification.get("status", "REVIEW"))
-    verification_status = str(verification.get("status", "REVIEW"))
     emit(PipelineEvent(
         run_id=run_id,
         stage="verification",
