@@ -553,7 +553,7 @@ def summary_markdown(artifact: ProblemArtifact, result: RunResult) -> str:
         )
     else:
         energy_summary = (
-            f"**Reconstructed final energy:** {float(result.reconstructed_energy):.8f} {unit}  \\n"
+            f"{energy_summary}"
         )
     return (
         f"## {result.status}\n\n"
