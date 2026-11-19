@@ -195,8 +195,8 @@ def build_verification_judgments(result: Optional[Mapping[str, Any]]) -> Dict[st
             physical = physical if isinstance(physical, Mapping) else {}
             classification = str(physical.get("classification", ""))
             below_minimum = (
-                signed_delta < -tolerance if signed_delta is not None
-                else classification in {"INVALID_BELOW_MINIMUM", "REVIEW_SAMPLING_BELOW_REFERENCE"}
+                classification in {"INVALID_BELOW_MINIMUM", "REVIEW_SAMPLING_BELOW_REFERENCE"}
+                or (signed_delta is not None and signed_delta < -tolerance)
             )
             consistent = absolute_error <= threshold
             if below_minimum and classification == "INVALID_BELOW_MINIMUM":
