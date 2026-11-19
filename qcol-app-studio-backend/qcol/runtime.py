@@ -10,6 +10,7 @@ from cirq.contrib.qasm_import import circuit_from_qasm
 import numpy as np
 
 from .config import REFERENCE_POLICY
+from .energy_bounds import check_minimum_energy_bound
 from .control import CancellationToken
 from .contracts import ProblemArtifact
 from .events import EventCallback, PipelineEvent
@@ -123,6 +124,41 @@ def _problem_artifact(realization_or_artifact):
     if hasattr(realization_or_artifact, "problem_artifact"):
         return realization_or_artifact.problem_artifact
     return realization_or_artifact
+
+
+def _ideal_statevector_energy(
+    artifact: ProblemArtifact,
+    bound_circuit: cirq.Circuit,
+    ordered_qubits: Sequence[cirq.Qid],
+    execution_adapter: Any,
+) -> Optional[float]:
+    """Return the exact local-simulator energy when statevector is supported."""
+    try:
+        state = np.asarray(
+            execution_adapter.simulate_statevector(
+                bound_circuit, qubit_order=tuple(ordered_qubits)
+            ),
+            dtype=np.complex128,
+        )
+        qubit_map = {qubit: index for index, qubit in enumerate(ordered_qubits)}
+        energy = float(artifact.measurement_plan["identity_coefficient"])
+        gates = {"X": cirq.X, "Y": cirq.Y, "Z": cirq.Z}
+        for group in artifact.measurement_plan["groups"]:
+            for item in group["terms"]:
+                paulis = {
+                    ordered_qubits[int(index)]: gates[str(pauli)]
+                    for index, pauli in item["term"]
+                }
+                observable = cirq.PauliString(paulis)
+                expectation = observable.expectation_from_state_vector(
+                    state, qubit_map=qubit_map
+                )
+                energy += float(item["coefficient"]) * float(np.real(expectation))
+        return float(energy)
+    except Exception:
+        # Hardware adapters and simulators without statevector support remain
+        # governed by the sampled-energy z-score policy.
+        return None
 
 
 def execute_artifact_parameter_point(
@@ -575,8 +611,12 @@ def execute_artifact_parameter_point(
         artifact_refs=["term_expectations", "energy_estimate"],
     )
 
+    ideal_statevector_energy = _ideal_statevector_energy(
+        artifact, bound, ordered_qubits, execution_adapter
+    )
     return {
         "parameter_values": [float(value) for value in values],
+        "ideal_statevector_energy": ideal_statevector_energy,
         "shots_per_group": int(shots),
         "seed": int(seed),
         "translation_check": clean_translation,
@@ -644,20 +684,54 @@ def verify_reconstructed_result(
     )
     threshold = max(3 * standard_error, floor)
 
-    # A ground-state reference is a hard lower bound, not merely a target
-    # inside a symmetric error band.  Statistical uncertainty may widen the
-    # upper acceptance window, but it must never authorize an energy below
-    # the declared minimum-energy reference.
-    energy_respects_minimum = reconstructed_energy >= reference_energy
-    structural_checks["energy_not_below_declared_minimum"] = energy_respects_minimum
+    sampled_bound = check_minimum_energy_bound(
+        reconstructed_energy, reference_energy, standard_error
+    )
+    ideal_energy = execution.get("ideal_statevector_energy")
+    ideal_bound = (
+        check_minimum_energy_bound(float(ideal_energy), reference_energy, 0.0)
+        if ideal_energy is not None else None
+    )
+    # The exact local statevector is the physical acceptance check. Sampled
+    # counts remain published as measurement evidence and can only downgrade
+    # acceptance to REVIEW; they can never turn a below-bound estimate into PASS.
+    if ideal_bound and ideal_bound["classification"] == "INVALID_BELOW_MINIMUM":
+        physical_classification = "INVALID_BELOW_MINIMUM"
+        physical_source = "ideal_local_statevector"
+    elif sampled_bound["classification"] != "ABOVE_MINIMUM":
+        physical_classification = sampled_bound["classification"]
+        physical_source = "sampled_measurement"
+    else:
+        physical_classification = "ABOVE_MINIMUM"
+        physical_source = "ideal_local_statevector" if ideal_bound else "sampled_measurement"
+    physical_bound = {
+        **sampled_bound,
+        "classification": physical_classification,
+        "source": physical_source,
+        "ideal_energy": float(ideal_energy) if ideal_energy is not None else None,
+        "ideal_energy_minus_reference": (
+            float(ideal_energy) - reference_energy
+            if ideal_energy is not None else None
+        ),
+        "ideal_classification": (
+            ideal_bound["classification"] if ideal_bound else "NOT_AVAILABLE"
+        ),
+    }
+    energy_respects_minimum = physical_classification == "ABOVE_MINIMUM"
     accepted = (
         all(structural_checks.values())
         and absolute_error <= threshold
         and energy_respects_minimum
     )
+    if physical_classification == "INVALID_BELOW_MINIMUM":
+        status = "INVALID_BELOW_MINIMUM"
+    elif physical_classification == "REVIEW_SAMPLING_BELOW_REFERENCE":
+        status = "REVIEW"
+    else:
+        status = "PASS" if accepted else "REVIEW"
 
     return {
-        "status": "PASS" if accepted else "REVIEW",
+        "status": status,
         "reference_policy": REFERENCE_POLICY,
         "structural_checks": structural_checks,
         "reference_kind": reference["kind"],
@@ -669,6 +743,9 @@ def verify_reconstructed_result(
         "minimum_energy_violation": max(0.0, reference_energy - reconstructed_energy),
         "standard_error": standard_error,
         "absolute_error": absolute_error,
+        "energy_minus_reference": reconstructed_energy - reference_energy,
+        "minimum_energy_tolerance": sampled_bound["tolerance"],
+        "physical_bound": physical_bound,
         "acceptance_threshold": threshold,
         "accepted": accepted,
         "sector_diagnostics": sector_diagnostics,
