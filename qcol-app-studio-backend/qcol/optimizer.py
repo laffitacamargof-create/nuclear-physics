@@ -440,10 +440,10 @@ def run_variational_runtime(
         or "MAXIMUM NUMBER OF FUNCTION EVALUATIONS" in message.upper()
     )
     converged = bool(
-        scipy_result.success
-        or (stagnation_converged and not evaluation_budget_exhausted)
+        not evaluation_budget_exhausted
+        and (scipy_result.success or stagnation_converged)
     )
-    if evaluation_budget_exhausted and not scipy_result.success:
+    if evaluation_budget_exhausted:
         message += " Evaluation budget exhausted; convergence is not certified."
     if rolling_improvement is not None:
         message += (
