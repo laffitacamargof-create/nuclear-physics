@@ -90,3 +90,27 @@ real execution engine, no remote code execution, SSE for live run events,
 the API-key prompt for remote backends being honestly labeled
 "target-only" — was already correct and is untouched. This pass only fixed
 what was actually broken and made hosting cheap and stable.
+
+## Runtime API routing and CORS (November 2026)
+
+The root production connector now reuses the canonical `qcol.api` router
+when the backend package is present. This keeps the connector's cached
+catalog and GitHub-inspection endpoints while also exposing the complete
+API contract consumed by `index.html`, including model-task realizations,
+run listing/cancellation, technical-error logs, Advisor, Try/Compare, and
+comparison retrieval.
+
+The canonical API keeps these origins enabled by default:
+
+- `https://laffitacamargof-create.github.io`
+- local development origins on ports 3000, 5173, and 7860
+
+Set `QCOL_CORS_ORIGINS` to a comma-separated list of additional browser
+origins, for example:
+
+```text
+QCOL_CORS_ORIGINS=https://staging.example.org,https://my-lab.example.org
+```
+
+Configured origins extend the built-in defaults; they do not replace the
+GitHub Pages origin. Specify origins without a trailing slash.
