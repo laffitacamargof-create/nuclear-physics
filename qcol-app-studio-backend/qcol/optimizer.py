@@ -315,9 +315,13 @@ def run_variational_runtime(
             cancellation_token=cancellation_token,
         )
         check_cancel("after_optimizer_evaluation")
-        sampled_energy = float(execution["energy"])
+        sampled_value = execution.get("sampled_energy")
+        sampled_energy = (
+            float(sampled_value) if sampled_value is not None
+            else (None if execution.get("ideal_statevector_energy") is not None else float(execution["energy"]))
+        )
         ideal_energy = execution.get("ideal_statevector_energy")
-        energy = float(ideal_energy) if ideal_energy is not None else sampled_energy
+        energy = float(ideal_energy) if ideal_energy is not None else float(execution["energy"])
         standard_error = float(execution["standard_error"])
         previous_energy = history[-1]["energy"] if history else None
         best_energy = min(best_energy, energy)
@@ -326,6 +330,7 @@ def run_variational_runtime(
             "theta": [float(v) for v in theta],
             "energy": energy,
             "sampled_energy": sampled_energy,
+            "energy_source": "ideal_local_statevector" if ideal_energy is not None else "sampled_measurement",
             "ideal_statevector_energy": (
                 float(ideal_energy) if ideal_energy is not None else None
             ),
