@@ -592,6 +592,7 @@ input:focus, select:focus, textarea:focus { border-color: var(--blue); box-shado
 
 .scientific-core-box{margin:12px 0}.semantic-boundary-note{padding:9px 11px;border-left:3px solid #46b6ff;background:#0c1927;color:#aebed0;font-size:12px;margin-bottom:9px}.scientific-core-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.scientific-core-grid>div{border:1px solid #29394d;border-radius:8px;padding:8px;background:#0d1621}.scientific-core-grid span{display:block;color:#8fa1b5;font-size:10px;text-transform:uppercase;letter-spacing:.04em}.scientific-core-grid strong{display:block;color:#e4edf7;font-size:11px;margin-top:3px;overflow-wrap:anywhere}.scientific-core-grid code{white-space:normal;color:#b9c7d8}@media(max-width:760px){.scientific-core-grid{grid-template-columns:1fr}}
 
+.below-minimum { color: #b42318 !important; font-weight: 800; }
 </style>
 </head>
 <body>
@@ -627,7 +628,7 @@ input:focus, select:focus, textarea:focus { border-color: var(--blue); box-shado
 <label><span>Run mode</span><select id="runMode"><option value="vqe">External VQE loop (COBYLA)</option><option value="single_evaluation">Single validated θ evaluation</option></select></label>
 <label><span>Provider target</span><select id="targetBackend"><option value="ibm">IBM</option><option value="google">Google</option><option value="aws">AWS</option></select></label>
 <label><span>Shots per measurement group</span><input id="shots" min="64" step="64" type="number" value="1024"/></label>
-<label><span>Maximum energy evaluations</span><input id="maxEvaluations" max="500" min="1" type="number" value="24"/></label>
+<label><span>Maximum energy evaluations</span><input id="maxEvaluations" max="200" min="4" type="number" value="100"/></label>
 <label><span>Energy tolerance</span><input id="energyTolerance" min="0" step="0.0001" type="number" value="0.002"/></label>
 <label><span>Acceptance absolute floor</span><input id="acceptanceFloor" min="0" step="0.001" type="number" value="0.05"/></label>
 <label><span>Seed</span><input id="seed" step="1" type="number" value="42"/></label>
