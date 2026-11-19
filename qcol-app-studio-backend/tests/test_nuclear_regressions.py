@@ -15,6 +15,9 @@ sys.path.insert(0, str(ROOT))
 from qcol.energy_bounds import check_minimum_energy_bound
 from qcol.public_views import build_verification_judgments
 from qcol.runtime import _ideal_statevector_energy, verify_reconstructed_result
+from qcol.mapping_policies.profiles.pair_bindings import pair_verification_handler
+from qcol.comparison.engine import _execution_outcome
+from qcol.comparison.enums import ComparisonOutcome
 import cirq
 
 
@@ -76,6 +79,40 @@ class MinimumEnergyBoundTests(unittest.TestCase):
         judgments = build_verification_judgments(result)
         self.assertEqual(judgments["statistical_consistency"]["status"], "FAIL")
         self.assertEqual(judgments["variational_bound"]["status"], "FAIL")
+
+
+class SharedPolicyIntegrationTests(unittest.TestCase):
+    def test_pair_mapping_uses_signed_minimum_energy_policy(self):
+        result = pair_verification_handler(
+            result={"energy": 9.9, "standard_error": 0.1},
+            reference={"reference_energy": 10.0},
+        )
+        self.assertEqual(
+            result["physical_bound"]["classification"],
+            "REVIEW_SAMPLING_BELOW_REFERENCE",
+        )
+        self.assertFalse(result["accepted"])
+
+    def test_phase_c_rejects_candidate_below_its_reference(self):
+        candidate = {
+            "run_id": "candidate",
+            "result": {
+                "task_id": "ground_state_energy",
+                "energy": 0.9,
+                "status": "PASS",
+                "verification": {
+                    "status": "PASS",
+                    "reference_energy": 1.0,
+                    "standard_error": 0.01,
+                },
+            },
+            "evidence_available": True,
+        }
+        outcome, rationale, _metrics, _warnings, _missing = _execution_outcome(
+            {}, candidate, numerical_floor=1e-12, sigma_multiplier=3.0
+        )
+        self.assertEqual(outcome, ComparisonOutcome.REJECT)
+        self.assertIn("minimum-energy reference", rationale)
 
 
 class UiRegressionTests(unittest.TestCase):
