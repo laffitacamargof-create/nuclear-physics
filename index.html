@@ -1089,9 +1089,11 @@ function renderScientificCoreInspector() {
   const core = view.scientific_core?.model_contract || {};
   const value = key => core[key]?.value;
   const format = item => {
-    if (Array.isArray(item)) return item.map(esc).join(", ");
-    if (item && typeof item === "object") return `<code>${esc(JSON.stringify(item))}</code>`;
-    return esc(item ?? "—");
+    const serialize = value => value && typeof value === "object"
+      ? `<code>${esc(JSON.stringify(value))}</code>`
+      : esc(value ?? "—");
+    if (Array.isArray(item)) return item.map(serialize).join(", ");
+    return serialize(item);
   };
   const rows = [
     ["Physical phenomenon", value("physical_phenomenon")],
