@@ -86,7 +86,8 @@ class UiRegressionTests(unittest.TestCase):
 
     def test_scientific_core_objects_are_rendered_as_json_not_object_string(self):
         html = (ROOT / "index.html").read_text(encoding="utf-8")
-        self.assertIn('JSON.stringify(item)', html)
+        self.assertIn('JSON.stringify(value)', html)
+        self.assertIn('item.map(serialize)', html)
 
 
 class RuntimeEnergyRegressionTests(unittest.TestCase):
