@@ -75,6 +75,17 @@ class MinimumEnergyBoundTests(unittest.TestCase):
         self.assertEqual(judgments["variational_bound"]["status"], "FAIL")
 
 
+class UiRegressionTests(unittest.TestCase):
+    def test_ground_state_restores_vqe_after_one_pass_task(self):
+        html = (ROOT / "index.html").read_text(encoding="utf-8")
+        self.assertIn('state.userRunMode || "vqe"', html)
+        self.assertIn('state.taskId === "mapping_analysis"', html)
+
+    def test_scientific_core_objects_are_rendered_as_json_not_object_string(self):
+        html = (ROOT / "index.html").read_text(encoding="utf-8")
+        self.assertIn('JSON.stringify(item)', html)
+
+
 class ConnectorContractTests(unittest.TestCase):
     def test_connector_exposes_all_ui_routes(self):
         import qcol_app_studio_connector as connector
