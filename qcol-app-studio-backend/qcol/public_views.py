@@ -88,6 +88,7 @@ def build_verification_judgments(result: Optional[Mapping[str, Any]]) -> Dict[st
             "pipeline_integrity": waiting,
             "qasm_semantic_preservation": waiting,
             "statistical_consistency": waiting,
+            "variational_bound": waiting,
             "optimizer_convergence": waiting,
             "scientific_acceptance": waiting,
         }
@@ -143,6 +144,12 @@ def build_verification_judgments(result: Optional[Mapping[str, Any]]) -> Dict[st
             "RunResult.translation_check",
         )
 
+    variational = _judgment(
+        "NOT_APPLICABLE",
+        "Variational bound",
+        "This task does not estimate a ground-state energy.",
+        "RunResult.task_id",
+    )
     if task_id == "mapping_analysis":
         accepted = bool(verification.get("accepted", verification.get("all_transforms_verified", False)))
         statistical = _judgment(
@@ -182,17 +189,65 @@ def build_verification_judgments(result: Optional[Mapping[str, Any]]) -> Dict[st
                 "ProblemArtifact.exact_reference",
             )
         elif absolute_error is not None and threshold is not None:
-            consistent = absolute_error <= threshold
-            statistical = _judgment(
-                "PASS" if consistent else "REVIEW",
-                "Statistical consistency",
-                (
-                    f"|E − E_ref| = {absolute_error:.6g} is within the declared threshold {threshold:.6g}."
-                    if consistent
-                    else f"|E − E_ref| = {absolute_error:.6g} exceeds the declared threshold {threshold:.6g}."
-                ),
-                "RunResult.verification.absolute_error / acceptance_threshold",
+            signed_delta = _finite_number(verification.get("energy_minus_reference"))
+            tolerance = _finite_number(verification.get("minimum_energy_tolerance")) or 1e-9
+            physical = verification.get("physical_bound")
+            physical = physical if isinstance(physical, Mapping) else {}
+            classification = str(physical.get("classification", ""))
+            below_minimum = (
+                signed_delta < -tolerance if signed_delta is not None
+                else classification in {"INVALID_BELOW_MINIMUM", "REVIEW_SAMPLING_BELOW_REFERENCE"}
             )
+            consistent = absolute_error <= threshold
+            if below_minimum and classification == "INVALID_BELOW_MINIMUM":
+                statistical_status = "FAIL"
+                statistical_detail = (
+                    f"E − E_ref = {signed_delta:.6g} is below the declared minimum "
+                    f"by more than the physical/statistical tolerance; result is invalid."
+                    if signed_delta is not None else
+                    "The physical-bound verifier classified this result as below the declared minimum."
+                )
+            elif below_minimum:
+                statistical_status = "REVIEW"
+                statistical_detail = (
+                    f"E − E_ref = {signed_delta:.6g} is below the reference but compatible "
+                    "with finite-shot sampling noise; it is not accepted."
+                    if signed_delta is not None else
+                    "The sampled estimate is below the reference within its uncertainty; it is not accepted."
+                )
+            else:
+                statistical_status = "PASS" if consistent else "REVIEW"
+                statistical_detail = (
+                    f"|E − E_ref| = {absolute_error:.6g} is within the declared threshold {threshold:.6g}."
+                    if consistent else
+                    f"|E − E_ref| = {absolute_error:.6g} exceeds the declared threshold {threshold:.6g}."
+                )
+            statistical = _judgment(
+                statistical_status,
+                "Statistical consistency",
+                statistical_detail,
+                "RunResult.verification.energy_minus_reference / absolute_error / acceptance_threshold",
+            )
+            if classification == "INVALID_BELOW_MINIMUM":
+                variational = _judgment(
+                    "FAIL", "Variational bound",
+                    "Energy is below the declared minimum beyond tolerance; scientific acceptance is blocked.",
+                    "RunResult.verification.physical_bound",
+                )
+            elif classification == "REVIEW_SAMPLING_BELOW_REFERENCE":
+                variational = _judgment(
+                    "REVIEW", "Variational bound",
+                    "The sampled energy is below the reference but compatible with finite-shot noise; not accepted.",
+                    "RunResult.verification.physical_bound",
+                )
+            elif classification == "ABOVE_MINIMUM" or (
+                signed_delta is not None and signed_delta >= -tolerance
+            ):
+                variational = _judgment(
+                    "PASS", "Variational bound",
+                    "The energy estimate respects the declared minimum within numerical tolerance.",
+                    "RunResult.verification.physical_bound",
+                )
         else:
             statistical = _judgment(
                 "REVIEW",
@@ -254,6 +309,7 @@ def build_verification_judgments(result: Optional[Mapping[str, Any]]) -> Dict[st
         "pipeline_integrity": pipeline,
         "qasm_semantic_preservation": qasm,
         "statistical_consistency": statistical,
+        "variational_bound": variational,
         "optimizer_convergence": optimizer,
         "scientific_acceptance": scientific,
     }
