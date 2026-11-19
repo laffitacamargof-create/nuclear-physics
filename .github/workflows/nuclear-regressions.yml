@@ -1,0 +1,27 @@
+name: Nuclear app regression checks
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main, "fix/nuclear-app-runtime-and-validation"]
+
+jobs:
+  regression:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: qcol-app-studio-backend/requirements.txt
+      - name: Install pinned runtime
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -r qcol-app-studio-backend/requirements.txt
+      - name: Run regression tests
+        env:
+          PYTHONPATH: qcol-app-studio-backend:.
+        run: python -m unittest discover -s qcol-app-studio-backend/tests -v
