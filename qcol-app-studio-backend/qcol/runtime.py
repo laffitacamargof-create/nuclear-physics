@@ -287,6 +287,20 @@ def execute_artifact_parameter_point(
         _emit(
             event_callback,
             run_id=run_id,
+            stage="translation",
+            status="completed",
+            message="Measurement-free OpenQASM 2 round trip validated; final measurement circuits are deferred.",
+            iteration=iteration,
+            metrics={
+                "role": evaluation_role,
+                "semantic_check_performed": bool(strict_semantic_checks),
+                "execution_mode": "local_statevector",
+            },
+            artifact_refs=["measurement_free_qasm2_roundtrip"],
+        )
+        _emit(
+            event_callback,
+            run_id=run_id,
             stage="execute",
             status="completed",
             message="Evaluated the COBYLA objective with the exact local statevector; shots are deferred.",
