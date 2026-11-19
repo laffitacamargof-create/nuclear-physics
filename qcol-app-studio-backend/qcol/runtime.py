@@ -262,6 +262,77 @@ def execute_artifact_parameter_point(
         )
 
     check_cancel("after_measurement_free_translation")
+    ideal_statevector_energy = _ideal_statevector_energy(
+        artifact, bound, ordered_qubits, execution_adapter
+    )
+    if evaluation_role == "optimizer_evaluation" and ideal_statevector_energy is not None:
+        clean_translation = {
+            key: value
+            for key, value in translation_check.items()
+            if key not in {"executable_circuit", "executable_qubit_order", "raw_qasm2", "unrolled_qasm2"}
+        }
+        evidence_summary = {
+            "iteration": iteration,
+            "role": evaluation_role,
+            "group_count": len(artifact.measurement_plan["groups"]),
+            "shots_per_group": 0,
+            "total_shots": 0,
+            "validated_groups": 0,
+            "full_artifacts_retained": False,
+            "groups": [],
+            "measurement_performed": False,
+            "objective_source": "ideal_local_statevector",
+            "note": "Finite-shot measurements are deferred to the final strict evaluation.",
+        }
+        _emit(
+            event_callback,
+            run_id=run_id,
+            stage="execute",
+            status="completed",
+            message="Evaluated the COBYLA objective with the exact local statevector; shots are deferred.",
+            iteration=iteration,
+            metrics={
+                "role": evaluation_role,
+                "energy": float(ideal_statevector_energy),
+                "standard_error": 0.0,
+                "execution_mode": "local_statevector",
+                "shots_per_group": 0,
+            },
+            artifact_refs=["ideal_statevector_energy"],
+        )
+        _emit(
+            event_callback,
+            run_id=run_id,
+            stage="reconstruct",
+            status="completed",
+            message="Exact Hamiltonian expectation reconstructed from the local statevector.",
+            iteration=iteration,
+            metrics={
+                "role": evaluation_role,
+                "energy": float(ideal_statevector_energy),
+                "standard_error": 0.0,
+            },
+            artifact_refs=["ideal_statevector_energy"],
+        )
+        return {
+            "parameter_values": [float(value) for value in values],
+            "ideal_statevector_energy": float(ideal_statevector_energy),
+            "shots_per_group": 0,
+            "seed": int(seed),
+            "translation_check": clean_translation,
+            "term_expectations": {},
+            "energy": float(ideal_statevector_energy),
+            "standard_error": 0.0,
+            "records": [],
+            "evidence_summary": evidence_summary,
+            "sector_diagnostics": {
+                "applicable": False,
+                "reason": "Sector diagnostics are retained for the final strict sampled evaluation.",
+                "source": "deferred_to_final_evaluation",
+            },
+            "execution_adapter": execution_adapter.descriptor.to_dict(),
+        }
+
     groups = list(artifact.measurement_plan["groups"])
     n_groups = len(groups)
     _emit(
@@ -611,9 +682,6 @@ def execute_artifact_parameter_point(
         artifact_refs=["term_expectations", "energy_estimate"],
     )
 
-    ideal_statevector_energy = _ideal_statevector_energy(
-        artifact, bound, ordered_qubits, execution_adapter
-    )
     return {
         "parameter_values": [float(value) for value in values],
         "ideal_statevector_energy": ideal_statevector_energy,
