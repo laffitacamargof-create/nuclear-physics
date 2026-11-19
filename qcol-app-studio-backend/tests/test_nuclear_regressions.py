@@ -3,6 +3,7 @@ from __future__ import annotations
 import os
 import sys
 import unittest
+from types import SimpleNamespace
 from pathlib import Path
 from unittest.mock import patch
 
@@ -13,6 +14,8 @@ sys.path.insert(0, str(ROOT))
 
 from qcol.energy_bounds import check_minimum_energy_bound
 from qcol.public_views import build_verification_judgments
+from qcol.runtime import _ideal_statevector_energy, verify_reconstructed_result
+import cirq
 
 
 class MinimumEnergyBoundTests(unittest.TestCase):
@@ -84,6 +87,91 @@ class UiRegressionTests(unittest.TestCase):
     def test_scientific_core_objects_are_rendered_as_json_not_object_string(self):
         html = (ROOT / "index.html").read_text(encoding="utf-8")
         self.assertIn('JSON.stringify(item)', html)
+
+
+class RuntimeEnergyRegressionTests(unittest.TestCase):
+    def test_statevector_energy_matches_pauli_expectation(self):
+        qubit = cirq.LineQubit(0)
+        circuit = cirq.Circuit(cirq.X(qubit))
+
+        class LocalAdapter:
+            def simulate_statevector(self, circuit, qubit_order):
+                return cirq.Simulator().simulate(
+                    circuit, qubit_order=qubit_order
+                ).final_state_vector
+
+        artifact = SimpleNamespace(measurement_plan={
+            "identity_coefficient": 0.25,
+            "groups": [{
+                "terms": [{
+                    "term": ((0, "Z"),),
+                    "coefficient": 2.0,
+                }]
+            }],
+        })
+        energy = _ideal_statevector_energy(
+            artifact, circuit, (qubit,), LocalAdapter()
+        )
+        self.assertAlmostEqual(energy, -1.75, places=10)
+
+    def test_exact_statevector_violation_blocks_acceptance(self):
+        artifact = SimpleNamespace(
+            exact_reference={
+                "reference_energy": 2.4,
+                "kind": "test_reference",
+                "reference_scope": "one-qubit test",
+                "acceptance_abs_floor": 0.05,
+            },
+            validation_checks={"test_contract": True},
+        )
+        result = verify_reconstructed_result(
+            artifact,
+            {
+                "translation_check": {"validated": True, "passed": True},
+                "records": [],
+                "energy": 2.41,
+                "standard_error": 0.001,
+                "ideal_statevector_energy": 2.4 - 1e-6,
+            },
+            {},
+        )
+        self.assertEqual(result["status"], "INVALID_BELOW_MINIMUM")
+        self.assertEqual(
+            result["physical_bound"]["classification"],
+            "INVALID_BELOW_MINIMUM",
+        )
+        self.assertNotIn(
+            "energy_not_below_declared_minimum",
+            result["structural_checks"],
+        )
+
+    def test_sampling_dip_is_review_when_exact_energy_respects_bound(self):
+        artifact = SimpleNamespace(
+            exact_reference={
+                "reference_energy": 2.4,
+                "kind": "test_reference",
+                "reference_scope": "one-qubit test",
+                "acceptance_abs_floor": 0.05,
+            },
+            validation_checks={"test_contract": True},
+        )
+        result = verify_reconstructed_result(
+            artifact,
+            {
+                "translation_check": {"validated": True, "passed": True},
+                "records": [],
+                "energy": 2.39,
+                "standard_error": 0.02,
+                "ideal_statevector_energy": 2.41,
+            },
+            {},
+        )
+        self.assertEqual(result["status"], "REVIEW")
+        self.assertEqual(
+            result["physical_bound"]["classification"],
+            "REVIEW_SAMPLING_BELOW_REFERENCE",
+        )
+        self.assertFalse(result["accepted"])
 
 
 class ConnectorContractTests(unittest.TestCase):
