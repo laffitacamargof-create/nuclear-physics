@@ -5,6 +5,7 @@ import math
 from typing import Any, Mapping, Optional
 
 from qcol.realization_policies.base import contract_fingerprint, json_contract_value
+from qcol.energy_bounds import check_minimum_energy_bound
 from .contracts import ComparisonDecisionRecord, MetricComparison, RunComparison
 from .enums import ComparisonKind, ComparisonOutcome, MetricDirection, MetricJudgment
 from .policies import DECLARED_METRICS_POLICY_ID, MAPPING_RESOURCE_POLICY_ID, get_comparison_policy
@@ -204,6 +205,25 @@ def _execution_outcome(
 
     baseline_status = _verification_status(baseline)
     candidate_status = _verification_status(candidate)
+    candidate_result = _result(candidate)
+    candidate_verification = _verification(candidate)
+    candidate_energy = _number(_first(
+        candidate_result.get("reconstructed_energy"), candidate_result.get("energy")
+    ))
+    candidate_reference = _number(candidate_verification.get("reference_energy"))
+    if candidate_energy is not None and candidate_reference is not None:
+        bound = check_minimum_energy_bound(
+            candidate_energy,
+            candidate_reference,
+            _number(candidate_verification.get("standard_error")) or 0.0,
+        )
+        if bound["classification"] != "ABOVE_MINIMUM":
+            return (
+                ComparisonOutcome.REJECT,
+                "The candidate is below its declared minimum-energy reference "
+                f"({bound['classification']}); the baseline is retained.",
+                metrics, warnings, missing,
+            )
     candidate_terminal = str(candidate.get("status", "")).lower()
     if candidate_terminal in {"failed", "cancelled"}:
         return ComparisonOutcome.REJECT, f"The candidate run ended as {candidate_terminal}; the baseline is retained.", metrics, warnings, missing

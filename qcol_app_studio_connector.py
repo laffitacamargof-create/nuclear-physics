@@ -403,6 +403,14 @@ def evidence(run_id: str):
     )
 
 
+# Reuse the complete canonical API router so the production connector exposes
+# every endpoint consumed by index.html (realization catalog, run history,
+# cancellation, technical logs, Advisor, Try/Compare, and comparison records).
+# Connector-specific routes above remain first and retain their catalog cache.
+if QCOL is not None:
+    app.include_router(QCOL.app.router)
+
+
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(

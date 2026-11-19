@@ -129,8 +129,12 @@ _DEFAULT_ORIGINS = [
 
 
 def _cors_origins() -> list[str]:
+    """Keep the public QuOLab Pages origin available even with custom CORS settings."""
     raw = os.getenv("QCOL_CORS_ORIGINS", "").strip()
-    return [item.strip() for item in raw.split(",") if item.strip()] or _DEFAULT_ORIGINS
+    configured = [item.strip() for item in raw.split(",") if item.strip()]
+    # An operator may add origins, but an incomplete override must not silently
+    # remove the deployed GitHub Pages client and break every browser request.
+    return list(dict.fromkeys([*_DEFAULT_ORIGINS, *configured]))
 
 
 app = FastAPI(

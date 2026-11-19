@@ -63,6 +63,10 @@ def _initial_vector(artifact: ProblemArtifact, request: Mapping[str, Any]) -> np
         )
     if not np.all(np.isfinite(array)):
         raise ValueError("Initial parameters contain non-finite values.")
+    if supplied is None and array.size and np.allclose(array, 0.0, atol=1e-12):
+        # Avoid starting every spin-orbital COBYLA run at the same flat,
+        # symmetry-sensitive all-zero point.
+        array = 0.1 * np.sin(np.arange(1, array.size + 1, dtype=float))
     return _wrap_angles(array)
 
 
@@ -311,7 +315,13 @@ def run_variational_runtime(
             cancellation_token=cancellation_token,
         )
         check_cancel("after_optimizer_evaluation")
-        energy = float(execution["energy"])
+        sampled_value = execution.get("sampled_energy")
+        sampled_energy = (
+            float(sampled_value) if sampled_value is not None
+            else (None if execution.get("ideal_statevector_energy") is not None else float(execution["energy"]))
+        )
+        ideal_energy = execution.get("ideal_statevector_energy")
+        energy = float(ideal_energy) if ideal_energy is not None else float(execution["energy"])
         standard_error = float(execution["standard_error"])
         previous_energy = history[-1]["energy"] if history else None
         best_energy = min(best_energy, energy)
@@ -319,6 +329,11 @@ def run_variational_runtime(
             "evaluation": iteration,
             "theta": [float(v) for v in theta],
             "energy": energy,
+            "sampled_energy": sampled_energy,
+            "energy_source": "ideal_local_statevector" if ideal_energy is not None else "sampled_measurement",
+            "ideal_statevector_energy": (
+                float(ideal_energy) if ideal_energy is not None else None
+            ),
             "standard_error": standard_error,
             "best_energy": best_energy,
             "delta_energy": (
@@ -424,8 +439,17 @@ def run_variational_runtime(
     if len(best_trace) > patience:
         rolling_improvement = float(best_trace[-patience - 1] - best_trace[-1])
         stagnation_converged = rolling_improvement <= energy_tolerance
-    converged = bool(scipy_result.success or stagnation_converged)
     message = str(scipy_result.message)
+    evaluation_budget_exhausted = (
+        len(optimizer_energies) >= max_evaluations
+        or "MAXIMUM NUMBER OF FUNCTION EVALUATIONS" in message.upper()
+    )
+    converged = bool(
+        not evaluation_budget_exhausted
+        and (scipy_result.success or stagnation_converged)
+    )
+    if evaluation_budget_exhausted:
+        message += " Evaluation budget exhausted; convergence is not certified."
     if rolling_improvement is not None:
         message += (
             f" Best-energy improvement over the last {patience} evaluations: "

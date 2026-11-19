@@ -10,6 +10,8 @@ from __future__ import annotations
 from collections.abc import Mapping, Sequence
 from typing import Any
 
+from ...energy_bounds import check_minimum_energy_bound
+
 
 def _normalize_bits(bitstring: str | Sequence[int] | Sequence[bool]) -> tuple[int, ...]:
     if isinstance(bitstring, str):
@@ -88,10 +90,18 @@ def term_expectation_reconstruction(*, expectations: Sequence[float], coefficien
 def pair_verification_handler(*, result: Mapping[str, Any], reference: Mapping[str, Any]) -> Mapping[str, Any]:
     estimate = float(result.get("estimate", result.get("energy", 0.0)))
     reference_energy = float(reference.get("reference_energy", reference.get("energy", 0.0)))
+    bound = check_minimum_energy_bound(
+        estimate,
+        reference_energy,
+        float(result.get("standard_error", 0.0)),
+    )
     return {
         "estimate": estimate,
         "reference_energy": reference_energy,
         "absolute_error": abs(estimate - reference_energy),
+        "energy_minus_reference": estimate - reference_energy,
+        "physical_bound": bound,
+        "accepted": bound["classification"] == "ABOVE_MINIMUM",
         "pair_sector_declared": True,
         "seniority_zero_declared": True,
     }

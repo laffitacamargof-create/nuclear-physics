@@ -592,6 +592,8 @@ input:focus, select:focus, textarea:focus { border-color: var(--blue); box-shado
 
 .scientific-core-box{margin:12px 0}.semantic-boundary-note{padding:9px 11px;border-left:3px solid #46b6ff;background:#0c1927;color:#aebed0;font-size:12px;margin-bottom:9px}.scientific-core-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.scientific-core-grid>div{border:1px solid #29394d;border-radius:8px;padding:8px;background:#0d1621}.scientific-core-grid span{display:block;color:#8fa1b5;font-size:10px;text-transform:uppercase;letter-spacing:.04em}.scientific-core-grid strong{display:block;color:#e4edf7;font-size:11px;margin-top:3px;overflow-wrap:anywhere}.scientific-core-grid code{white-space:normal;color:#b9c7d8}@media(max-width:760px){.scientific-core-grid{grid-template-columns:1fr}}
 
+.below-minimum { color: #b42318 !important; font-weight: 800; }
+.sampling-below-reference { color: #b54708 !important; font-weight: 800; }
 </style>
 </head>
 <body>
@@ -627,7 +629,7 @@ input:focus, select:focus, textarea:focus { border-color: var(--blue); box-shado
 <label><span>Run mode</span><select id="runMode"><option value="vqe">External VQE loop (COBYLA)</option><option value="single_evaluation">Single validated θ evaluation</option></select></label>
 <label><span>Provider target</span><select id="targetBackend"><option value="ibm">IBM</option><option value="google">Google</option><option value="aws">AWS</option></select></label>
 <label><span>Shots per measurement group</span><input id="shots" min="64" step="64" type="number" value="1024"/></label>
-<label><span>Maximum energy evaluations</span><input id="maxEvaluations" max="500" min="1" type="number" value="24"/></label>
+<label><span>Maximum energy evaluations</span><input id="maxEvaluations" max="200" min="4" type="number" value="100"/></label>
 <label><span>Energy tolerance</span><input id="energyTolerance" min="0" step="0.0001" type="number" value="0.002"/></label>
 <label><span>Acceptance absolute floor</span><input id="acceptanceFloor" min="0" step="0.001" type="number" value="0.05"/></label>
 <label><span>Seed</span><input id="seed" step="1" type="number" value="42"/></label>
@@ -1087,9 +1089,11 @@ function renderScientificCoreInspector() {
   const core = view.scientific_core?.model_contract || {};
   const value = key => core[key]?.value;
   const format = item => {
-    if (Array.isArray(item)) return item.map(esc).join(", ");
-    if (item && typeof item === "object") return `<code>${esc(JSON.stringify(item))}</code>`;
-    return esc(item ?? "—");
+    const serialize = value => value && typeof value === "object"
+      ? `<code>${esc(JSON.stringify(value))}</code>`
+      : esc(value ?? "—");
+    if (Array.isArray(item)) return item.map(serialize).join(", ");
+    return serialize(item);
   };
   const rows = [
     ["Physical phenomenon", value("physical_phenomenon")],
@@ -1289,7 +1293,16 @@ function renderTaskOptions() {
   $("taskSupportNote").textContent = selected.note;
   const observable = state.taskId === "observable_estimation";
   const mappingAnalysis = state.taskId === "mapping_analysis";
-  $("runMode").value = (observable || mappingAnalysis) ? "single_evaluation" : ($("runMode").value || "vqe");
+  if (observable || mappingAnalysis) {
+    if ($("runMode").value !== "single_evaluation") {
+      state.userRunMode = $("runMode").value || state.userRunMode || "vqe";
+    }
+    $("runMode").value = "single_evaluation";
+  } else {
+    // A one-pass mapping/observable task must not leave the next ground-state
+    // task trapped in single_evaluation mode.
+    $("runMode").value = state.userRunMode || "vqe";
+  }
   $("runMode").disabled = observable || mappingAnalysis;
   $("maxEvaluations").disabled = observable || mappingAnalysis;
   $("energyTolerance").disabled = observable || mappingAnalysis;
@@ -1927,7 +1940,7 @@ function renderArtifact(artifact, journey, display) {
 
 function renderJudgments(display) {
   const judgments = display?.epistemic_status || {};
-  const order = ["pipeline_integrity", "qasm_semantic_preservation", "statistical_consistency", "optimizer_convergence", "scientific_acceptance"];
+  const order = ["pipeline_integrity", "qasm_semantic_preservation", "statistical_consistency", "variational_bound", "optimizer_convergence", "scientific_acceptance"];
   $("judgmentList").innerHTML = order.map(key => {
     const item = judgments[key] || { status: "WAITING", label: key, detail: "Waiting" };
     const css = `judge-${String(item.status).toLowerCase()}`;
@@ -2089,7 +2102,10 @@ function renderCompactSummary(snapshot, journey, result, artifact, display) {
     const unit = artifact?.units?.energy || result.meaning?.unit || "";
     $("compactPrimaryValue").textContent = result.reconstructed_energy !== null && result.reconstructed_energy !== undefined ? `${number(result.reconstructed_energy,9)} ${unit}` : "—";
     $("compactReference").textContent = result.verification?.reference_energy !== null && result.verification?.reference_energy !== undefined ? `${number(result.verification.reference_energy,9)} ${unit}` : "unavailable";
-    $("compactError").textContent = result.verification?.absolute_error !== null && result.verification?.absolute_error !== undefined ? `${number(result.verification.absolute_error,6)} ${unit}` : result.status;
+    const signedDelta = result.verification?.energy_minus_reference;
+    $("compactError").textContent = signedDelta !== null && signedDelta !== undefined
+      ? `ΔE = ${number(signedDelta,6)} ${unit}`
+      : (result.verification?.absolute_error !== null && result.verification?.absolute_error !== undefined ? `|ΔE| = ${number(result.verification.absolute_error,6)} ${unit}` : result.status);
   }
 }
 
@@ -2282,7 +2298,19 @@ function renderSnapshot() {
     $("resultUncertainty").textContent = result ? `± ${number(result.standard_error,5)} ${unit} · reconstructed from counts` : "from measurement counts";
     $("resultReference").textContent = verification.reference_energy !== null && verification.reference_energy !== undefined ? `${number(verification.reference_energy,9)} ${unit}` : "unavailable";
     $("referenceScope").textContent = verification.reference_scope || (artifact?.exact_reference ? "declared small-system / sector reference" : "exact reference unavailable · verification level limited");
-    $("resultError").textContent = verification.absolute_error !== null && verification.absolute_error !== undefined ? `${number(verification.absolute_error,6)} ${unit}` : "—";
+    const signedDelta = verification.energy_minus_reference;
+    $("resultError").textContent = signedDelta !== null && signedDelta !== undefined
+      ? `ΔE = ${number(signedDelta,6)} ${unit}`
+      : (verification.absolute_error !== null && verification.absolute_error !== undefined ? `|ΔE| = ${number(verification.absolute_error,6)} ${unit}` : "—");
+    const physicalBound = verification.physical_bound || {};
+    $("resultError").classList.remove("below-minimum", "sampling-below-reference");
+    if (physicalBound.classification === "INVALID_BELOW_MINIMUM") {
+      $("resultError").textContent += " · BELOW MINIMUM";
+      $("resultError").classList.add("below-minimum");
+    } else if (physicalBound.classification === "REVIEW_SAMPLING_BELOW_REFERENCE") {
+      $("resultError").textContent += " · BELOW REFERENCE · SAMPLING REVIEW";
+      $("resultError").classList.add("sampling-below-reference");
+    }
     $("resultThreshold").textContent = verification.acceptance_threshold !== null && verification.acceptance_threshold !== undefined ? `${number(verification.acceptance_threshold,6)} ${unit}` : "—";
     const sectorDiagnostics = verification.sector_diagnostics || result?.meaning?.result?.sector_diagnostics || {};
     if (sectorDiagnostics.applicable) {
@@ -2402,6 +2430,9 @@ async function bootstrap() {
   renderSnapshot();
 }
 
+$("runMode").addEventListener("change", () => {
+  if (!$("runMode").disabled) state.userRunMode = $("runMode").value || "vqe";
+});
 $("runForm").addEventListener("submit", submitRun);
 $("cancelButton").addEventListener("click", cancelRun);
 $("newRunButton").addEventListener("click", resetDashboard);
